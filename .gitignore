@@ -1,0 +1,6 @@
+*.web
+*.DS_Store
+node_modules/*
+dist/main.js
+*.code-workspace
+.vscode/
