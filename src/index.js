@@ -17,15 +17,15 @@ main();
 function main() {
   let activeArea = document.getElementById("activeArea");
 
-  var w = 30000;
-  var h = 30000;
+  var w = 33000;
+  var h = 33000;
   var mapMinZoom = 2;
   var mapMaxZoom = 7;
   var _map = L.map('mapid', {
     maxZoom: mapMaxZoom,
     minZoom: mapMinZoom,
     crs: L.CRS.Simple,
-    zoomControl: false,
+    zoomControl: true,
     wheelPxPerZoomLevel: 250,
     attributionControl: false,
     detectRetina: true
@@ -37,7 +37,7 @@ function main() {
   _map.setMaxBounds(_mapBounds);
 
   var _mapCenter = _map.unproject([w / 2, h / 2], mapMaxZoom);
-  _map.setView(_mapCenter, -3);
+  _map.setView(_mapCenter, 2);
 
   var _tileLayer = L.tileLayer(
     'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
@@ -53,5 +53,5 @@ function main() {
   // Set up drag-and-drop for the active area
   // setupDragAndDrop(activeArea, objCallback);
 
-  _map.fitBounds(_mapBounds)
+  // _map.fitBounds(_mapBounds)
 }
