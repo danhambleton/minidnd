@@ -12,11 +12,12 @@
 
 import * as L from "leaflet"
 import { SoundStage } from "./SoundStage.js";
-
+import { PeerGroup } from "./PeerGroup.js";
 
 main();
 
 function main() {
+
   let activeArea = document.getElementById("activeArea");
   let mapid = document.getElementById("mapid");
   var w = 33000;
@@ -47,7 +48,7 @@ function main() {
     bounds: _mapBounds,
     continuousWorld: false,
     noWrap: true,
-    tileSize: 256,
+    tileSize: 250,
     crs: L.CRS.Simple,
     detectRetina: true
   }).addTo(_map);
@@ -55,14 +56,17 @@ function main() {
   // Set up drag-and-drop for the active area
   // setupDragAndDrop(activeArea, objCallback);
 
-  // _map.fitBounds(_mapBounds)
-
   var soundStage = new SoundStage();
+  var peerGroup = new PeerGroup();
 
   //set up key press event listeners
   document.addEventListener('keydown', (e) =>{
     soundStage.logKey(e);
+    peerGroup.logKey(e);
   });
+
+
+
 }
 
 

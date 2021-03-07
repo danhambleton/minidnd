@@ -3,13 +3,43 @@ body {
   margin: 0;
 }
 
-canvas {
+/* canvas {
   display: block;
   width: 100%;
   height: 100%;
+} */
+
+#peer-group {
+  width: 100%;
+  height: 60px;
+  position: fixed;
+  top: 10px;
+  left: 10px;
 }
 
-html, body, #mapid {
+button {
+  margin-top: 0px;
+  line-height: 30px;
+  font-weight: bold;
+  padding: 0 10px;
+  background: salmon;
+  border: none;
+}
+
+input {
+  margin-top: 0px;
+  line-height: 30px;
+  font-weight: bold;
+  padding: 0 10px;
+  background: rgb(216, 216, 216);
+  border: none;
+}
+
+button:hover {
+  background: lightsalmon;
+}
+
+#mapid {
   width: 1024px;
   height: 720px;
   position: fixed;

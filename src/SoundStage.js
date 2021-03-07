@@ -17,7 +17,7 @@ class SoundStage {
 
     logKey(e) {
         console.log(e.code);
-        this.soundA.play();
+        // this.soundA.play();
     }
 }
 
