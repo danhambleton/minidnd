@@ -11,12 +11,14 @@
 // import { setupDragAndDrop } from "./DragAndDrop.js";
 
 import * as L from "leaflet"
+import { SoundStage } from "./SoundStage.js";
+
 
 main();
 
 function main() {
   let activeArea = document.getElementById("activeArea");
-
+  let mapid = document.getElementById("mapid");
   var w = 33000;
   var h = 33000;
   var mapMinZoom = 2;
@@ -54,4 +56,13 @@ function main() {
   // setupDragAndDrop(activeArea, objCallback);
 
   // _map.fitBounds(_mapBounds)
+
+  var soundStage = new SoundStage();
+
+  //set up key press event listeners
+  document.addEventListener('keydown', (e) =>{
+    soundStage.logKey(e);
+  });
 }
+
+
