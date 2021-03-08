@@ -19,6 +19,11 @@ class SoundStage {
         console.log(e.code);
         // this.soundA.play();
     }
+
+    playDefaultSound()
+    {
+        this.soundA.play();
+    }
 }
 
 

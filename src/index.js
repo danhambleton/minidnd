@@ -56,12 +56,10 @@ function main() {
   // Set up drag-and-drop for the active area
   // setupDragAndDrop(activeArea, objCallback);
 
-  var soundStage = new SoundStage();
   var peerGroup = new PeerGroup();
 
   //set up key press event listeners
   document.addEventListener('keydown', (e) =>{
-    soundStage.logKey(e);
     peerGroup.logKey(e);
   });
 
