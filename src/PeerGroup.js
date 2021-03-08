@@ -32,15 +32,14 @@ class PeerGroup {
         startGroup.addEventListener("click", function () {
 
             console.log("Starting new peer group...");
-            // this.peerObj = new Peer(null, {
-            //     debug: 3
-            // });
 
-            this.peerObj = new Peer('someid', {
-                host: 'localhost',
-                port: 9000,
-                path: '/myapp'
-              });
+            this.peerObj = new Peer();
+
+            // this.peerObj = new Peer('someid', {
+            //     host: 'localhost',
+            //     port: 9000,
+            //     path: '/myapp'
+            //   });
 
             this.peerObj.on('open', function (id) {
 
@@ -88,16 +87,14 @@ class PeerGroup {
             // console.log(this.peerGroupID);
 
             console.log("Connecting to existing peer group...");
-            // console.log(this.peerGroupID);
-            // this.peerObj = new Peer(null, {
-            //     debug: 3
-            // });
+ 
+            this.peerObj = new Peer();
 
-            this.peerObj = new Peer('someotherid', {
-                host: 'localhost',
-                port: 9000,
-                path: '/myapp'
-              });
+            // this.peerObj = new Peer('someotherid', {
+            //     host: 'localhost',
+            //     port: 9000,
+            //     path: '/myapp'
+            //   });
 
             var conn = this.peerObj.connect('someid');
 
