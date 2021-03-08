@@ -23,8 +23,6 @@ class PeerGroup {
         var textInput = document.createElement('input');
         body.appendChild(textInput);
 
-        this.peerGroupID = '';
-        this.peerObj = {};
 
         var soundStage = new SoundStage();
 
@@ -33,15 +31,16 @@ class PeerGroup {
 
             console.log("Starting new peer group...");
 
-            this.peerObj = new Peer();
+            var peer = new Peer('mini-dnd-iwd-host-123');
 
             // this.peerObj = new Peer('someid', {
-            //     host: 'localhost',
+            //     host: '192.168.2.127',
             //     port: 9000,
             //     path: '/myapp'
             //   });
 
-            this.peerObj.on('open', function (id) {
+
+             peer.on('open', function (id) {
 
                 console.log('My peer ID is: ' + id);
                 // Receive messages
@@ -49,13 +48,13 @@ class PeerGroup {
                 startGroup.innerHTML = id;
             });
 
-            this.peerObj.on('error', function (err) {
+            peer.on('error', function (err) {
 
                 console.log(err);
 
             });
 
-            this.peerObj.on('connection', function(conn){
+            peer.on('connection', function(conn){
 
                 console.log('connection received from: ' + conn.peer);
 
@@ -88,15 +87,18 @@ class PeerGroup {
 
             console.log("Connecting to existing peer group...");
  
-            this.peerObj = new Peer();
+            var otherPeer= new Peer();
 
-            // this.peerObj = new Peer('someotherid', {
-            //     host: 'localhost',
-            //     port: 9000,
-            //     path: '/myapp'
-            //   });
+            otherPeer.on('open', function (id) {
 
-            var conn = this.peerObj.connect('someid');
+                console.log('My peer ID is: ' + id);
+                // Receive messages
+
+                startGroup.innerHTML = id;
+            });
+
+            var conn = otherPeer.connect('mini-dnd-iwd-host-123');
+
 
             conn.on('error', function (err) {
 
