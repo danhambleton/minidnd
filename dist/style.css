@@ -1,16 +1,18 @@
 body {
     font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
-    background-color: white;
+    background-color: rgb(90, 90, 90);
 	min-width: 450px;
 }
 
 h1 {
     font-size: 1.75em;
+    color:rgb(192, 192, 223)
 }
 
 h2 {
     text-align: center;
     font-size: 4em; 
+    color:rgb(192, 192, 223)
 }
 
 td {
@@ -27,7 +29,7 @@ a:visited{
 
 .display {
     width: 100%;
-    min-height: 400px;
+    min-height: 200px;
     padding-bottom: 20px;
 }
 
@@ -42,27 +44,11 @@ a:visited{
 }
 
 .display-box {
-    border: 2px solid black;
+    border: 2px solid rgb(105, 123, 172);
 }
 
 .title {
     vertical-align: top;
-}
-
-.standby {
-    background-color: red;
-}
-
-.go {
-    background-color: green;
-}
-
-.fade {
-    background-color: yellow;
-}
-
-.off {
-    background-color: gray;
 }
 
 .hidden {
@@ -74,11 +60,11 @@ a:visited{
 }
 
 .status {
-    height: 125px;
+    height: 75px;
     vertical-align: text-top;
     font-weight: bold;
     margin-bottom: 10px;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid rgb(105, 123, 172);
     
 }
 
@@ -86,12 +72,12 @@ a:visited{
     height: 125px;
     max-height: 125px;
     margin-bottom: 10px;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid rgb(105, 123, 172);
     overflow: auto;
 }
 
 .msg-time {
-    color: blue;
+    color: rgb(192, 192, 223);
 }
 
 .cueMsg {

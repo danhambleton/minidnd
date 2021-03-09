@@ -13,17 +13,20 @@ function main() {
     var recvId = document.getElementById("receiver-id");
     var status = document.getElementById("status");
     var message = document.getElementById("message");
-    var standbyBox = document.getElementById("standby");
-    var goBox = document.getElementById("go");
-    var fadeBox = document.getElementById("fade");
-    var offBox = document.getElementById("off");
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
 
-    //set up some sounds
-    var creakyDoor = new Howl({
+    var playerContent = document.getElementById("playerContent");
+
+    //set up some the assets bound to the buttons
+    //TODO: do this way better...
+    var audioOne = new Howl({
         src: ['assets/audio/CreakyDoorOpenClose.mp3']
+    });
+
+    var audioTwo = new Howl({
+        src: ['assets/audio/Snowstorm_Outside.mp3']
     });
 
     /**
@@ -95,21 +98,21 @@ function main() {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
             switch (data) {
-                case 'Go':
-                    go();
+                case 'audio-one':
+                    audioOneState();
                     addMessage(cueString + data);
                     creakyDoor.play();
                     break;
-                case 'Fade':
-                    fade();
+                case 'audio-two':
+                    audioTwoState();
                     addMessage(cueString + data);
                     break;
-                case 'Off':
-                    off();
+                case 'image-one':
+                    imageOneState();
                     addMessage(cueString + data);
                     break;
-                case 'Reset':
-                    reset();
+                case 'map-one':
+                    mapOneState();
                     addMessage(cueString + data);
                     break;
                 default:
@@ -123,35 +126,69 @@ function main() {
         });
     }
 
-    function go() {
-        standbyBox.className = "display-box hidden";
-        goBox.className = "display-box go";
-        fadeBox.className = "display-box hidden";
-        offBox.className = "display-box hidden";
+    function audioOneState() {
+
+        audioOne.play();
+        playerContent.style.background = 'green';
+
         return;
     };
 
-    function fade() {
-        standbyBox.className = "display-box hidden";
-        goBox.className = "display-box hidden";
-        fadeBox.className = "display-box fade";
-        offBox.className = "display-box hidden";
+    function audioTwoState() {
+
+        audioTwo.play();
+        playerContent.style.background = 'blue';
+
         return;
     };
 
-    function off() {
-        standbyBox.className = "display-box hidden";
-        goBox.className = "display-box hidden";
-        fadeBox.className = "display-box hidden";
-        offBox.className = "display-box off";
+    function imageOneState() {
+
+        
+        playerContent.style.background = 'yellow';
+
+        playerContent.style.backgroundImage = 'url(assets/image/winter-scene.jpeg)';
+
         return;
     }
 
-    function reset() {
-        standbyBox.className = "display-box standby";
-        goBox.className = "display-box hidden";
-        fadeBox.className = "display-box hidden";
-        offBox.className = "display-box hidden";
+    function mapOneState() {
+
+        playerContent.style.background = 'orange';
+
+        var w = 33000;
+        var h = 33000;
+        var mapMinZoom = 2;
+        var mapMaxZoom = 7;
+        var _map = L.map('playerContent', {
+          maxZoom: mapMaxZoom,
+          minZoom: mapMinZoom,
+          crs: L.CRS.Simple,
+          zoomControl: true,
+          wheelPxPerZoomLevel: 250,
+          attributionControl: false,
+          detectRetina: true
+        });
+      
+        var _mapBounds = new L.LatLngBounds(
+          _map.unproject([0, h], mapMaxZoom),
+          _map.unproject([w, 0], mapMaxZoom));
+        _map.setMaxBounds(_mapBounds);
+      
+        var _mapCenter = _map.unproject([w / 2, h / 2], mapMaxZoom);
+        _map.setView(_mapCenter, 2);
+      
+        var _tileLayer = L.tileLayer(
+          'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
+          minZoom: mapMinZoom, maxZoom: mapMaxZoom,
+          bounds: _mapBounds,
+          continuousWorld: false,
+          noWrap: true,
+          tileSize: 250,
+          crs: L.CRS.Simple,
+          detectRetina: true
+        }).addTo(_map);
+
         return;
     };
 

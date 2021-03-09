@@ -11,15 +11,18 @@ function main() {
     var recvIdInput = document.getElementById("receiver-id");
     var status = document.getElementById("status");
     var message = document.getElementById("message");
-    var goButton = document.getElementById("goButton");
-    var resetButton = document.getElementById("resetButton");
-    var fadeButton = document.getElementById("fadeButton");
-    var offButton = document.getElementById("offButton");
+
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
     var connectButton = document.getElementById("connect-button");
     var cueString = "<span class=\"cueMsg\">Cue: </span>";
+
+    // TODO: programmaticely create these elements from UI or specs
+    var audioOneButton = document.getElementById("audio-one");
+    var audioTwoButton = document.getElementById("audio-two");
+    var imageOneButton = document.getElementById("image-one");
+    var mapOne = document.getElementById("map-one");
 
     /**
      * Create the Peer object for our end of the connection.
@@ -137,17 +140,17 @@ function main() {
         }
     }
 
-    goButton.addEventListener('click', function () {
-        signal("Go");
+    audioOneButton.addEventListener('click', function () {
+        signal("audio-one");
     });
-    resetButton.addEventListener('click', function () {
-        signal("Reset");
+    audioTwoButton.addEventListener('click', function () {
+        signal("audio-two");
     });
-    fadeButton.addEventListener('click', function () {
-        signal("Fade");
+    imageOneButton.addEventListener('click', function () {
+        signal("image-one");
     });
-    offButton.addEventListener('click', function () {
-        signal("Off");
+    mapOne.addEventListener('click', function () {
+        signal("map-one");
     });
 
     function addMessage(msg) {
