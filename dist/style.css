@@ -29,13 +29,22 @@ a:visited{
 
 .display {
     width: 100%;
-    min-height: 200px;
+    /* max-height: 200px;
+    min-height: 100px; */
+    bottom: 5px;
+    right: 5px;
     padding-bottom: 20px;
+    background-color: rgba(204, 204, 204, 0.5);
 }
 
 .control {
     width: 100%;
+    /* max-height: 200px;
+    min-height: 100px; */
+    bottom: 5px;
+    right: 5px;
     padding-bottom: 20px;
+    background-color: rgba(204, 204, 204, 0.5);
 }
 
 .control-button {
@@ -91,3 +100,47 @@ a:visited{
 .peerMsg {
     color: red;
 }
+
+button {
+    margin: 5px;
+    line-height: 20px;
+    font-weight: bold;
+    padding: 10px;
+    background: rgb(21, 255, 165);
+    border: none;
+  }s
+  
+  button:hover {
+    background: lightsalmon;
+  }
+  
+  .playerContent {
+    width: 100%;
+    min-height: 500px;
+    bottom: 5px;
+    right: 5px;
+    padding-bottom: 20px;
+    background: rgb(22, 22, 22);
+  }
+  
+  .stagedContent {
+    width: 100%;
+    min-height: 500px;
+    bottom: 5px;
+    right: 5px;
+    padding-bottom: 20px;
+    background: rgb(22, 22, 22);
+  }
+  
+  .overlay-container {
+    position: relative;
+    display: inline;
+  }
+  
+  .overlay-image{
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    max-width: 8%;
+    max-height: 8%;
+  }

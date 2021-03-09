@@ -18,6 +18,7 @@ function main() {
     var clearMsgsButton = document.getElementById("clearMsgsButton");
 
     var playerContent = document.getElementById("playerContent");
+    var mapInstance = null;
 
     //set up some the assets bound to the buttons
     //TODO: do this way better...
@@ -126,8 +127,23 @@ function main() {
         });
     }
 
+    function clearContent() {
+
+        playerContent.style.backgroundImage = '';
+        playerContent.style.background = 'black';
+        
+        //how to remove map?
+        
+        if(mapInstance )
+        {
+            mapInstance.remove();
+        }
+    }
+
     function audioOneState() {
 
+        clearContent();
+        
         audioOne.play();
         playerContent.style.background = 'green';
 
@@ -136,31 +152,36 @@ function main() {
 
     function audioTwoState() {
 
+        clearContent();
+        
         audioTwo.play();
         playerContent.style.background = 'blue';
+        
 
         return;
     };
 
     function imageOneState() {
 
-        
+        clearContent();
+
         playerContent.style.background = 'yellow';
-
         playerContent.style.backgroundImage = 'url(assets/image/winter-scene.jpeg)';
-
+        playerContent.style.objectFit = 'contain';
         return;
     }
 
     function mapOneState() {
 
+        clearContent();
+        
         playerContent.style.background = 'orange';
 
         var w = 33000;
         var h = 33000;
         var mapMinZoom = 2;
         var mapMaxZoom = 7;
-        var _map = L.map('playerContent', {
+        mapInstance = L.map('playerContent', {
           maxZoom: mapMaxZoom,
           minZoom: mapMinZoom,
           crs: L.CRS.Simple,
@@ -171,12 +192,12 @@ function main() {
         });
       
         var _mapBounds = new L.LatLngBounds(
-          _map.unproject([0, h], mapMaxZoom),
-          _map.unproject([w, 0], mapMaxZoom));
-        _map.setMaxBounds(_mapBounds);
+            mapInstance.unproject([0, h], mapMaxZoom),
+          mapInstance.unproject([w, 0], mapMaxZoom));
+          mapInstance.setMaxBounds(_mapBounds);
       
-        var _mapCenter = _map.unproject([w / 2, h / 2], mapMaxZoom);
-        _map.setView(_mapCenter, 2);
+        var _mapCenter = mapInstance.unproject([w / 2, h / 2], mapMaxZoom);
+        mapInstance.setView(_mapCenter, 2);
       
         var _tileLayer = L.tileLayer(
           'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
@@ -187,7 +208,7 @@ function main() {
           tileSize: 250,
           crs: L.CRS.Simple,
           detectRetina: true
-        }).addTo(_map);
+        }).addTo(mapInstance);
 
         return;
     };

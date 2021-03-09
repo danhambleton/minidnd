@@ -6,9 +6,6 @@
         <meta name="viewport" content="width=device-width">
         <link rel="stylesheet" href="style.css">
 
-        <link rel="stylesheet" href="more_styles.css">
-
-
         <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
         <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
         <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
@@ -16,6 +13,13 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
     </head>
     <body>
+
+        <div class="stagedContent" id="stagedContent">
+            <button type="button" class="control-button" id="audio-one">Audio: Door</button>
+            <button type="button" class="control-button" id="audio-two">Audio: Wind</button>
+            <button type="button" class="control-button" id="image-one">Image: WinterScene</button>
+            <button type="button" class="control-button" id="map-one">Map: The Dale</button>
+        </div>
 
         <div class="control">
             <!-- <div class="title">Status:</div>
@@ -32,14 +36,6 @@
             <div id="status" class="status"></div>
             <div class="message" id="message"></div>
         </div>
-
-        <div class="stagedContent" id="stagedContent">
-            <button type="button" class="control-button" id="audio-one">Audio: Door</button>
-            <button type="button" class="control-button" id="audio-two">Audio: Wind</button>
-            <button type="button" class="control-button" id="image-one">Image: WinterScene</button>
-            <button type="button" class="control-button" id="map-one">Map: The Dale</button>
-        </div>
-
         <script src="send.js"></script>
     </body>
 </html>
