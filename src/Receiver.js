@@ -1,5 +1,6 @@
 import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
+import {Howl, Howler} from 'howler';
 
 main();
 
@@ -19,6 +20,11 @@ function main() {
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
+
+    //set up some sounds
+    var creakyDoor = new Howl({
+        src: ['assets/audio/CreakyDoorOpenClose.mp3']
+    });
 
     /**
      * Create the Peer object for our end of the connection.
@@ -92,6 +98,7 @@ function main() {
                 case 'Go':
                     go();
                     addMessage(cueString + data);
+                    creakyDoor.play();
                     break;
                 case 'Fade':
                     fade();
