@@ -30,9 +30,11 @@ function main() {
 
     async function SavePhoto(inp) 
     {
+        console.log("hello callback");
+        
         let user = { name:'john', age:34 };
         let formData = new FormData();
-        let photo = inp.files[0];      
+        let photo = inp;      
             
         formData.append("photo", photo);
         formData.append("user", JSON.stringify(user)); 
@@ -41,7 +43,7 @@ function main() {
         setTimeout(() => ctrl.abort(), 5000);
         
         try {
-        let r = await fetch('/upload/image', 
+        let r = await fetch('http://danbleton.com/minidnd/assets/image', 
             {method: "POST", body: formData, signal: ctrl.signal}); 
         console.log('HTTP response code:',r.status); 
         } catch(e) {

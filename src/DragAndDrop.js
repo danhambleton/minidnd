@@ -47,7 +47,9 @@ export function setupDragAndDrop(dropArea, callback) {
     // Should only be 1 file
     //files[0].text().then(text => loadOBJToLineSegmentsFromText(text, callback));
 
-    console.log("hello file");
+    callback(files[0])
+
+  
   }
   dropArea.addEventListener("drop", handleDrop, false);
 }
