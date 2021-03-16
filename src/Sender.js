@@ -1,6 +1,9 @@
 import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
-import { setupDragAndDrop } from "./DragAndDrop.js";
+import { setupDragAndDrop } from "./DragAndDrop.js"
+import aws from "aws-sdk"
+// import * as fs from 'file-system';
+// import dotenv from "dotenv"
 
 main();
 
@@ -27,30 +30,59 @@ function main() {
 
     var stagingArea = document.getElementById("stagedContent");
 
+    // const s3 = new aws.S3({
+    //     endpoint: "danbleton.nyc3.digitaloceanspaces.com",
+    //     accessKeyId: process.env.SPACES_ACCESS_KEY,
+    //     secretAccessKey: process.env.SPACES_SECRET_KEY,
+    //   });
+
 
     async function SavePhoto(inp) 
     {
-        console.log("hello callback");
+        // console.log("hello callback");
         
-        let user = { name:'john', age:34 };
-        let formData = new FormData();
-        let photo = document.getElementById("filePicker").files[0];    
+        // let user = { name:'john', age:34 };
+        // let formData = new FormData();
+        // let photo = inp;      
             
-        formData.append("photo", photo);
-        formData.append("user", JSON.stringify(user)); 
-    
+        // formData.append("photo", photo);
+        // formData.append("user", JSON.stringify(user)); 
         
-        const ctrl = new AbortController()    // timeout
-        setTimeout(() => ctrl.abort(), 5000);
+        
+        // const ctrl = new AbortController()    // timeout
+        // setTimeout(() => ctrl.abort(), 5000);
         
         // try {
-        // let r = await fetch('https://danbleton.nyc3.digitaloceanspaces.com/assets/image/', 
+        // let r = await fetch('http://danbleton.com/minidnd/assets/image', 
         //     {method: "POST", body: formData, signal: ctrl.signal}); 
         // console.log('HTTP response code:',r.status); 
         // } catch(e) {
         // console.log('Huston we have problem...:', e);
         // }
 
+        // Configure client for use with Spaces
+        
+        const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
+        const s3 = new aws.S3({
+            endpoint: spacesEndpoint,
+            accessKeyId: '4BN4DAZL3EJO2XVSBWKV',
+            secretAccessKey: 'QrL1objgnKGOkjhpksEHEjYjGB1PhWBuebMZRitr0SE'
+        });
+
+        let photo = document.getElementById("filePicker").files[0];    
+
+
+        // Add a file to a Space
+        var params = {
+            Body: photo,
+            Bucket: "danbleton",
+            Key: "assets/audio/test.mp3",
+        };
+
+        s3.putObject(params, function(err, data) {
+            if (err) console.log(err, err.stack);
+            else     console.log(data);
+        });
         
     }
 

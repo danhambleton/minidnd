@@ -18,6 +18,8 @@
   "homepage": "danbleton.com",
   "dependencies": {
     "aws-sdk": "^2.864.0",
+    "dotenv": "^8.2.0",
+    "file-system": "^2.2.2",
     "howler": "^2.2.1",
     "http-server": "^0.12.3",
     "leaflet": "^1.7.1",
