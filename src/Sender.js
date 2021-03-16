@@ -65,8 +65,8 @@ function main() {
         const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
         const s3 = new aws.S3({
             endpoint: spacesEndpoint,
-            accessKeyId: '4BN4DAZL3EJO2XVSBWKV',
-            secretAccessKey: 'QrL1objgnKGOkjhpksEHEjYjGB1PhWBuebMZRitr0SE'
+            accessKeyId: '',
+            secretAccessKey: ''
         });
 
         let photo = document.getElementById("filePicker").files[0];    
