@@ -34,21 +34,23 @@ function main() {
         
         let user = { name:'john', age:34 };
         let formData = new FormData();
-        let photo = inp;      
+        let photo = document.getElementById("filePicker").files[0];    
             
         formData.append("photo", photo);
         formData.append("user", JSON.stringify(user)); 
+    
         
         const ctrl = new AbortController()    // timeout
         setTimeout(() => ctrl.abort(), 5000);
         
-        try {
-        let r = await fetch('http://danbleton.com/minidnd/assets/image', 
-            {method: "POST", body: formData, signal: ctrl.signal}); 
-        console.log('HTTP response code:',r.status); 
-        } catch(e) {
-        console.log('Huston we have problem...:', e);
-        }
+        // try {
+        // let r = await fetch('https://danbleton.nyc3.digitaloceanspaces.com/assets/image/', 
+        //     {method: "POST", body: formData, signal: ctrl.signal}); 
+        // console.log('HTTP response code:',r.status); 
+        // } catch(e) {
+        // console.log('Huston we have problem...:', e);
+        // }
+
         
     }
 
