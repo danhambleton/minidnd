@@ -23,11 +23,13 @@ function main() {
     //set up some the assets bound to the buttons
     //TODO: do this way better...
     var audioOne = new Howl({
-        src: ['assets/audio/CreakyDoorOpenClose.mp3']
+        src: ['assets/audio/CreakyDoorOpenClose.mp3'],
+        volume: 0.5
     });
 
     var audioTwo = new Howl({
-        src: ['assets/audio/Snowstorm_Outside.mp3']
+        src: ['assets/audio/Snowstorm_Outside.mp3'],
+        volume: 0.5
     });
 
     /**
@@ -39,6 +41,9 @@ function main() {
      function initialize() {
         // Create own peer object with connection to shared PeerJS server
         peer = new Peer(null, {
+            host: '9000-plum-barnacle-sgs4697k.ws-us03.gitpod.io',
+            path: '/',
+            secure: true,
             debug: 2
         });
 
@@ -102,7 +107,6 @@ function main() {
                 case 'audio-one':
                     audioOneState();
                     addMessage(cueString + data);
-                    creakyDoor.play();
                     break;
                 case 'audio-two':
                     audioTwoState();
@@ -137,6 +141,7 @@ function main() {
         if(mapInstance )
         {
             mapInstance.remove();
+            mapInstance = null;
         }
     }
 
@@ -167,7 +172,7 @@ function main() {
 
         playerContent.style.background = 'yellow';
         playerContent.style.backgroundImage = 'url(assets/image/winter-scene.jpeg)';
-        playerContent.style.objectFit = 'contain';
+        playerContent.style.objectFit = 'scale';
         return;
     }
 

@@ -29,7 +29,6 @@
  */
 
 // Functions to help set up drag & drop file uploads
-import { loadOBJToLineSegmentsFromText } from "./Helpers.js";
 
 export function setupDragAndDrop(dropArea, callback) {
   function preventDefaultDragAndDrop(event) {
@@ -46,7 +45,9 @@ export function setupDragAndDrop(dropArea, callback) {
     let files = dataTransfer.files;
 
     // Should only be 1 file
-    files[0].text().then(text => loadOBJToLineSegmentsFromText(text, callback));
+    //files[0].text().then(text => loadOBJToLineSegmentsFromText(text, callback));
+
+    console.log("hello file");
   }
   dropArea.addEventListener("drop", handleDrop, false);
 }

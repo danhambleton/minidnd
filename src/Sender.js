@@ -1,5 +1,6 @@
 import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
+import { setupDragAndDrop } from "./DragAndDrop.js";
 
 main();
 
@@ -24,6 +25,34 @@ function main() {
     var imageOneButton = document.getElementById("image-one");
     var mapOne = document.getElementById("map-one");
 
+    var stagingArea = document.getElementById("stagedContent");
+
+
+    async function SavePhoto(inp) 
+    {
+        let user = { name:'john', age:34 };
+        let formData = new FormData();
+        let photo = inp.files[0];      
+            
+        formData.append("photo", photo);
+        formData.append("user", JSON.stringify(user)); 
+        
+        const ctrl = new AbortController()    // timeout
+        setTimeout(() => ctrl.abort(), 5000);
+        
+        try {
+        let r = await fetch('/upload/image', 
+            {method: "POST", body: formData, signal: ctrl.signal}); 
+        console.log('HTTP response code:',r.status); 
+        } catch(e) {
+        console.log('Huston we have problem...:', e);
+        }
+        
+    }
+
+    // Set up drag-and-drop for the active area
+    setupDragAndDrop(stagingArea, SavePhoto);
+
     /**
      * Create the Peer object for our end of the connection.
      *
@@ -33,6 +62,9 @@ function main() {
     function initialize() {
         // Create own peer object with connection to shared PeerJS server
         peer = new Peer(null, {
+            host: '9000-plum-barnacle-sgs4697k.ws-us03.gitpod.io',
+            path: '/',
+            secure: true,
             debug: 2
         });
 
