@@ -45,7 +45,8 @@ function main() {
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: "assets/audio/test.mp3"
+            Key: "assets/audio/test.mp3",
+            ACL: 'public-read'
         };
 
         s3.putObject(params, function(err, data) {
