@@ -30,53 +30,22 @@ function main() {
 
     var stagingArea = document.getElementById("stagedContent");
 
-    // const s3 = new aws.S3({
-    //     endpoint: "danbleton.nyc3.digitaloceanspaces.com",
-    //     accessKeyId: process.env.SPACES_ACCESS_KEY,
-    //     secretAccessKey: process.env.SPACES_SECRET_KEY,
-    //   });
+    const s3 = new aws.S3({
+        endpoint: process.env.SPACES_ENDPOINT,
+        accessKeyId: process.env.SPACES_ACCESS_KEY,
+        secretAccessKey: process.env.SPACES_SECRET_KEY,
+      });
 
-
-    async function SavePhoto(inp) 
+    async function UploadAsset(inp) 
     {
-        // console.log("hello callback");
-        
-        // let user = { name:'john', age:34 };
-        // let formData = new FormData();
-        // let photo = inp;      
-            
-        // formData.append("photo", photo);
-        // formData.append("user", JSON.stringify(user)); 
-        
-        
-        // const ctrl = new AbortController()    // timeout
-        // setTimeout(() => ctrl.abort(), 5000);
-        
-        // try {
-        // let r = await fetch('http://danbleton.com/minidnd/assets/image', 
-        //     {method: "POST", body: formData, signal: ctrl.signal}); 
-        // console.log('HTTP response code:',r.status); 
-        // } catch(e) {
-        // console.log('Huston we have problem...:', e);
-        // }
-
-        // Configure client for use with Spaces
-        
-        const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
-        const s3 = new aws.S3({
-            endpoint: spacesEndpoint,
-            accessKeyId: '',
-            secretAccessKey: ''
-        });
-
-        let photo = document.getElementById("filePicker").files[0];    
-
+   
+        let asset = document.getElementById("filePicker").files[0];    
 
         // Add a file to a Space
         var params = {
-            Body: photo,
-            Bucket: "danbleton",
-            Key: "assets/audio/test.mp3",
+            Body: asset,
+            Bucket: process.env.SPACES_BUCKET,
+            Key: "assets/audio/test.mp3"
         };
 
         s3.putObject(params, function(err, data) {
@@ -87,7 +56,7 @@ function main() {
     }
 
     // Set up drag-and-drop for the active area
-    setupDragAndDrop(stagingArea, SavePhoto);
+    setupDragAndDrop(stagingArea, UploadAsset);
 
     /**
      * Create the Peer object for our end of the connection.

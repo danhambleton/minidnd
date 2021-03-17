@@ -5,3 +5,5 @@ dist/main.js
 dist/assets/*
 *.code-workspace
 .vscode/
+*.env
+dist/.env
