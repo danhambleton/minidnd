@@ -41,13 +41,13 @@ export function setupDragAndDrop(dropArea, callback) {
   });
 
   function handleDrop(event) {
-    let dataTransfer = event.dataTransfer;
-    let files = dataTransfer.files;
+ 
 
     // Should only be 1 file
     //files[0].text().then(text => loadOBJToLineSegmentsFromText(text, callback));
-
-    callback(files[0])
+    
+  //console.log(event);
+    callback(event)
 
   
   }

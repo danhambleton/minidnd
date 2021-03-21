@@ -22,12 +22,6 @@ function main() {
     var connectButton = document.getElementById("connect-button");
     var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
-    // TODO: programmaticely create these elements from UI or specs
-    var audioOneButton = document.getElementById("audio-one");
-    var audioTwoButton = document.getElementById("audio-two");
-    var imageOneButton = document.getElementById("image-one");
-    var mapOne = document.getElementById("map-one");
-
     var stagingArea = document.getElementById("stagedContent");
 
     const s3 = new aws.S3({
@@ -36,28 +30,46 @@ function main() {
         secretAccessKey: process.env.SPACES_SECRET_KEY,
       });
 
-    async function UploadAsset(inp) 
+    async function UploadAsset(event) 
     {
-   
-        let asset = document.getElementById("filePicker").files[0];    
+        
+        let dataTransfer = event.dataTransfer;
+        let files = dataTransfer.files;
+        let asset = files[0];
 
         // Add a file to a Space
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: "assets/audio/test.mp3",
+            Key: "assets/audio/" + files[0].name,
             ACL: 'public-read'
         };
 
+        event.srcElement.innerHTML = "<h2>Uploading</h2>";
+
         s3.putObject(params, function(err, data) {
             if (err) console.log(err, err.stack);
-            else     console.log(data);
+            else     
+            {
+                console.log(data);
+                event.targetElement.className = "cueElementReady";
+                event.targetElement.innerHTML = "<h2>" + params.Key.split(/(\\|\/)/g).pop() + "</h2>";
+            }
         });
+    }
+
+    var stagingArea = document.getElementById("contentGrid");
+    for(var i = 0; i < 16; i++)
+    {
+        var b = document.createElement("button");
+        b.className = "cueElementEmpty";
+        stagingArea.appendChild(b);
+
+        // Set up drag-and-drop for the active area
+        setupDragAndDrop(b, UploadAsset);
         
     }
 
-    // Set up drag-and-drop for the active area
-    setupDragAndDrop(stagingArea, UploadAsset);
 
     /**
      * Create the Peer object for our end of the connection.

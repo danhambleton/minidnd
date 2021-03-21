@@ -14,20 +14,30 @@
     </head>
     <body>
 
-        <div class="stagedContent" id="stagedContent">
-            <button type="button" class="control-button" id="audio-one">Audio: Door</button>
-            <button type="button" class="control-button" id="audio-two">Audio: Wind</button>
-            <button type="button" class="control-button" id="image-one">Image: WinterScene</button>
-            <button type="button" class="control-button" id="map-one">Map: The Dale</button>
+       <div class="editor" id="editor">
+           <div class="box header">Header</div>
+           <div class="box sidebar">S</div>
+           <div class="box stagingArea">
+                <div class="contentGrid" id="contentGrid"></div>
+           </div>
+           <div class="box inspector">Insp</div>
+           <div class="box console">
+                <span style="font-weight: bold">ID: </span>
+                <input type="text" id="receiver-id" title="Input the ID from receive.html">
+                <button id="connect-button">Connect</button>
 
-            <input id="filePicker" type="file" style="visibility:hidden" hidden/>
+                <input type="text" id="sendMessageBox" placeholder="Enter a message..." autofocus="true" />
+                <button type="button" id="sendButton">Send</button>
+                <button type="button" id="clearMsgsButton">Clear Msgs (Local)</button>
+
+                <div id="status" class="status"></div>
+                <div class="message" id="message"></div>
+           </div>
+       </div>
+       
+           <input id="filePicker" type="file" style="visibility:hidden" hidden/>
             
-        </div>
-
-        <div class="control">
-            <!-- <div class="title">Status:</div>
-            <div class="title">Messages:</div> -->
-
+        <!-- <div class="control">
             <span style="font-weight: bold">ID: </span>
             <input type="text" id="receiver-id" title="Input the ID from receive.html">
             <button id="connect-button">Connect</button>
@@ -38,7 +48,7 @@
 
             <div id="status" class="status"></div>
             <div class="message" id="message"></div>
-        </div>
+        </div> -->
         
         <script src="send.js"></script>
     </body>
