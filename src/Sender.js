@@ -2,6 +2,7 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
 import aws from "aws-sdk"
+import { Howl } from "howler";
 // import * as fs from 'file-system';
 // import dotenv from "dotenv"
 
@@ -24,6 +25,8 @@ function main() {
 
     var stagingArea = document.getElementById("stagedContent");
 
+    var soundStage = {};
+
     const s3 = new aws.S3({
         endpoint: process.env.SPACES_ENDPOINT,
         accessKeyId: process.env.SPACES_ACCESS_KEY,
@@ -45,6 +48,8 @@ function main() {
             ACL: 'public-read'
         };
 
+        console.log(params.Key);
+
         event.srcElement.innerHTML = "<h2>Uploading</h2>";
 
         s3.putObject(params, function(err, data) {
@@ -52,8 +57,21 @@ function main() {
             else     
             {
                 console.log(data);
-                event.targetElement.className = "cueElementReady";
-                event.targetElement.innerHTML = "<h2>" + params.Key.split(/(\\|\/)/g).pop() + "</h2>";
+                event.srcElement.className = "cueElementReady";
+                event.srcElement.innerHTML = "<h2>" + params.Key.split(/(\\|\/)/g).pop() + "</h2>";
+
+                //set up audio for this element
+
+                soundStage.audio =  new Howl({
+                        src: "https://" + [process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key],
+                        volume: 0.5
+                    });
+
+                event.srcElement.addEventListener('click', function(){
+
+                    soundStage.audio.play();
+
+                });
             }
         });
     }
@@ -66,8 +84,7 @@ function main() {
         stagingArea.appendChild(b);
 
         // Set up drag-and-drop for the active area
-        setupDragAndDrop(b, UploadAsset);
-        
+        setupDragAndDrop(b, UploadAsset);   
     }
 
 
@@ -189,19 +206,6 @@ function main() {
             console.log('Connection is closed');
         }
     }
-
-    audioOneButton.addEventListener('click', function () {
-        signal("audio-one");
-    });
-    audioTwoButton.addEventListener('click', function () {
-        signal("audio-two");
-    });
-    imageOneButton.addEventListener('click', function () {
-        signal("image-one");
-    });
-    mapOne.addEventListener('click', function () {
-        signal("map-one");
-    });
 
     function addMessage(msg) {
         var now = new Date();
