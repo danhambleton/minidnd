@@ -14,18 +14,19 @@
     </head>
     <body>
         
-
-        <div class="playerContent" id="playerContent"></div>
-
-        <div class="display">
-            <!-- <div class="title">Status:</div>
-            <div class="title">Messages:</div> -->
-            <div id="receiver-id" style="font-weight: bold;" title="Copy this ID to the input on send.html.">ID:</div>
-            <input type="text" id="sendMessageBox" placeholder="Enter a message..." autofocus="true" />
-            <button type="button" id="sendButton">Send</button>
-            <button type="button" id="clearMsgsButton">Clear Msgs (Local)</button>
-            <div id="status" class="status"></div>
-            <div class="message" id="message"></div>
+        <div class="editor" id="editor">
+            <div class="box header">Header</div>
+            <div class="box sidebar">S</div>
+            <div class="box stagingArea"></div>
+            <div class="box inspector">Insp</div>
+            <div class="box console">
+                <div id="receiver-id" style="font-weight: bold;" title="Copy this ID to the input on send.html.">ID:</div>
+                <input type="text" id="sendMessageBox" placeholder="Enter a message..." autofocus="true" />
+                <button type="button" id="sendButton">Send</button>
+                <button type="button" id="clearMsgsButton">Clear Msgs (Local)</button>
+                <div id="status" class="status"></div>
+                <div class="message" id="message"></div>
+            </div>
         </div>
 
         <script src="receive.js"></script>

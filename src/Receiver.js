@@ -17,20 +17,8 @@ function main() {
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
 
-    var playerContent = document.getElementById("playerContent");
-    var mapInstance = null;
+    var playerContent = document.getElementById("stagingArea");
 
-    //set up some the assets bound to the buttons
-    //TODO: do this way better...
-    var audioOne = new Howl({
-        src: ['assets/audio/CreakyDoorOpenClose.mp3'],
-        volume: 0.5
-    });
-
-    var audioTwo = new Howl({
-        src: ['assets/audio/Snowstorm_Outside.mp3'],
-        volume: 0.5
-    });
 
     /**
      * Create the Peer object for our end of the connection.
@@ -138,18 +126,18 @@ function main() {
         
         //how to remove map?
         
-        if(mapInstance )
-        {
-            mapInstance.remove();
-            mapInstance = null;
-        }
+        // if(mapInstance )
+        // {
+        //     mapInstance.remove();
+        //     mapInstance = null;
+        // }
     }
 
     function audioOneState() {
 
         clearContent();
         
-        audioOne.play();
+        // audioOne.play();
         playerContent.style.background = 'green';
 
         return;
@@ -159,7 +147,7 @@ function main() {
 
         clearContent();
         
-        audioTwo.play();
+        // audioTwo.play();
         playerContent.style.background = 'blue';
         
 
@@ -171,8 +159,8 @@ function main() {
         clearContent();
 
         playerContent.style.background = 'yellow';
-        playerContent.style.backgroundImage = 'url(assets/image/winter-scene.jpeg)';
-        playerContent.style.objectFit = 'scale';
+        // playerContent.style.backgroundImage = 'url(assets/image/winter-scene.jpeg)';
+        // playerContent.style.objectFit = 'scale';
         return;
     }
 
@@ -182,38 +170,38 @@ function main() {
         
         playerContent.style.background = 'orange';
 
-        var w = 33000;
-        var h = 33000;
-        var mapMinZoom = 2;
-        var mapMaxZoom = 7;
-        mapInstance = L.map('playerContent', {
-          maxZoom: mapMaxZoom,
-          minZoom: mapMinZoom,
-          crs: L.CRS.Simple,
-          zoomControl: true,
-          wheelPxPerZoomLevel: 250,
-          attributionControl: false,
-          detectRetina: true
-        });
+        // var w = 33000;
+        // var h = 33000;
+        // var mapMinZoom = 2;
+        // var mapMaxZoom = 7;
+        // mapInstance = L.map('playerContent', {
+        //   maxZoom: mapMaxZoom,
+        //   minZoom: mapMinZoom,
+        //   crs: L.CRS.Simple,
+        //   zoomControl: true,
+        //   wheelPxPerZoomLevel: 250,
+        //   attributionControl: false,
+        //   detectRetina: true
+        // });
       
-        var _mapBounds = new L.LatLngBounds(
-            mapInstance.unproject([0, h], mapMaxZoom),
-          mapInstance.unproject([w, 0], mapMaxZoom));
-          mapInstance.setMaxBounds(_mapBounds);
+        // var _mapBounds = new L.LatLngBounds(
+        //     mapInstance.unproject([0, h], mapMaxZoom),
+        //   mapInstance.unproject([w, 0], mapMaxZoom));
+        //   mapInstance.setMaxBounds(_mapBounds);
       
-        var _mapCenter = mapInstance.unproject([w / 2, h / 2], mapMaxZoom);
-        mapInstance.setView(_mapCenter, 2);
+        // var _mapCenter = mapInstance.unproject([w / 2, h / 2], mapMaxZoom);
+        // mapInstance.setView(_mapCenter, 2);
       
-        var _tileLayer = L.tileLayer(
-          'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
-          minZoom: mapMinZoom, maxZoom: mapMaxZoom,
-          bounds: _mapBounds,
-          continuousWorld: false,
-          noWrap: true,
-          tileSize: 250,
-          crs: L.CRS.Simple,
-          detectRetina: true
-        }).addTo(mapInstance);
+        // var _tileLayer = L.tileLayer(
+        //   'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
+        //   minZoom: mapMinZoom, maxZoom: mapMaxZoom,
+        //   bounds: _mapBounds,
+        //   continuousWorld: false,
+        //   noWrap: true,
+        //   tileSize: 250,
+        //   crs: L.CRS.Simple,
+        //   detectRetina: true
+        // }).addTo(mapInstance);
 
         return;
     };
