@@ -17,7 +17,9 @@ function main() {
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
 
-    var playerContent = document.getElementById("stagingArea");
+    var playerContent = document.getElementById("playerContent");
+
+    var contentMap = {};
 
 
     /**
@@ -91,27 +93,93 @@ function main() {
         conn.on('data', function (data) {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
-            switch (data) {
-                case 'audio-one':
-                    audioOneState();
-                    addMessage(cueString + data);
-                    break;
-                case 'audio-two':
-                    audioTwoState();
-                    addMessage(cueString + data);
-                    break;
-                case 'image-one':
-                    imageOneState();
-                    addMessage(cueString + data);
-                    break;
-                case 'map-one':
-                    mapOneState();
-                    addMessage(cueString + data);
-                    break;
-                default:
-                    addMessage("<span class=\"peerMsg\">Peer: </span>" + data);
-                    break;
-            };
+
+            console.log(data.type);
+
+            if(data.type === "audio")
+            {
+                if(!contentMap[data.src])
+                {
+                    console.log("creating new audio at: " + data.src);
+
+                    var track = new Howl({
+                        src: data.src,
+                        volume: 0.5
+                    });
+
+                    var contentParams = {
+                        type: "audio",
+                        state: "ready",
+                        media: track
+                    };
+
+                    contentMap[data.src] = contentParams;
+                }
+
+                else
+                {
+                   console.log(contentMap[data.src]);
+                   
+                    if(contentMap[data.src].state === "ready")
+                   {
+                        contentMap[data.src].media.play();
+                        contentMap[data.src].state = "playing";
+                   }
+
+                   else if(contentMap[data.src].state === "playing")
+                   {
+                        contentMap[data.src].media.stop();
+                        contentMap[data.src].state = "ready";
+                   }
+
+                }
+
+            }
+
+            if(data.type === "image")
+            {
+
+            }
+
+            if(data.type === "video")
+            {
+                if(!contentMap[data.src])
+                {
+                    console.log("creating new video at: " + data.src);
+
+                    var videoCue = document.createElement("video");
+                    videoCue.className = "videoCue";
+                    videoCue.src = data.src;
+                    videoCue.autoplay = true;
+                    videoCue.id = "video-cue";
+
+                    playerContent.appendChild(videoCue);
+
+                    
+
+                    var contentParams = {
+                        type: "video",
+                        state: "playing"
+                    };
+
+                    contentMap[data.src] = contentParams;
+                }
+
+                else
+                {
+                    var videoCue = document.getElementById("video-cue");
+                    
+                    if(videoCue)
+                    {
+                        playerContent.removeChild(videoCue);
+                    }
+
+                    contentMap[data.src] = null;
+                }
+            }
+
+
+
         });
         conn.on('close', function () {
             status.innerHTML = "Connection reset<br>Awaiting connection...";

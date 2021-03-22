@@ -48,8 +48,6 @@ function main() {
             ACL: 'public-read'
         };
 
-        console.log(params.Key);
-
         event.srcElement.innerHTML = "<h2>Uploading</h2>";
 
         s3.putObject(params, function(err, data) {
@@ -62,14 +60,28 @@ function main() {
 
                 //set up audio for this element
 
-                soundStage.audio =  new Howl({
-                        src: "https://" + [process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key],
-                        volume: 0.5
-                    });
+                var url = "https://" + process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key;
+
+                var contentParams = {
+                    src: url,
+                    type: "audio",
+                    cmd: "play"
+                }
+
+                //TODO: super janky. Needs waaay better file extensions filtering.
+                if(params.Key.split('.').pop() === "webm")
+                {
+                    contentParams.type = "video";
+                }
 
                 event.srcElement.addEventListener('click', function(){
 
-                    soundStage.audio.play();
+                    console.log(contentParams);
+
+                    if(conn)
+                    {
+                        conn.send(contentParams);
+                    }
 
                 });
             }

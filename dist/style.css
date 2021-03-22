@@ -28,7 +28,7 @@ a:visited{
 }
 
 .editor {
-    width: 100%;
+    max-width: 100%;
     height: 99vh;
     bottom: 5px;
     background: rgba(22, 22, 22, 0.308);
@@ -94,7 +94,9 @@ a:visited{
         background: #1f1f1f57;
         /* margin: 5px; */
         padding: 20px;
+        min-width: 200px;
         /* width: 200px;
+
         height: 150px; */
     }
 
@@ -104,9 +106,23 @@ a:visited{
         /* margin: 5px; */
         background: #555555;
         padding: 20px;
+        min-width: 200px;
         /* width: 200px;
         height: 150px; */
     }
+
+.imageCue {
+    width: 100fr;
+    height: 100fr;
+    object-fit: scale-down;
+
+}
+
+.videoCue {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
 
 .display {
     width: 100%;
