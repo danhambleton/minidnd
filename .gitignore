@@ -7,3 +7,4 @@ dist/assets/*
 .vscode/
 *.env
 dist/.env
+data/
