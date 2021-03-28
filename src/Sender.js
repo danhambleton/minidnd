@@ -3,8 +3,6 @@ import Peer, * as peer from "peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
 import aws from "aws-sdk"
 import { Howl } from "howler";
-// import * as fs from 'file-system';
-// import dotenv from "dotenv"
 
 main();
 
@@ -12,15 +10,15 @@ function main() {
 
     var lastPeerId = null;
     var peer = null; // own peer object
-    var conn = null;
-    var recvIdInput = document.getElementById("receiver-id");
+    var conn = new Array();
+    var hostID = document.getElementById("host-id");
     var status = document.getElementById("status");
     var message = document.getElementById("message");
 
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
-    var connectButton = document.getElementById("connect-button");
+    // var connectButton = document.getElementById("connect-button");
     var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
     var stagingArea = document.getElementById("stagedContent");
@@ -78,9 +76,9 @@ function main() {
 
                     console.log(contentParams);
 
-                    if(conn)
+                    for(const c of conn)
                     {
-                        conn.send(contentParams);
+                        c.send(contentParams);
                     }
 
                 });
@@ -125,13 +123,42 @@ function main() {
             }
 
             console.log('ID: ' + peer.id);
+            hostID.innerHTML = "ID: " + peer.id;
+            status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
         });
         peer.on('connection', function (c) {
-            // Disallow incoming connections
+            
             c.on('open', function() {
-                c.send("Sender does not accept incoming connections");
-                setTimeout(function() { c.close(); }, 500);
+                // c.send("Sender does not accept incoming connections");
+                // setTimeout(function() { c.close(); }, 500);
+                if(conn.length < process.env.MAX_PEERS)
+                {
+                    conn.push(c);
+                    c.send("Connected with host: " + peer.id);
+                    addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
+                    status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
+
+                }
+                else
+                {
+                    c.send("Host has reached max number of peers. Disconnecting...");
+                    addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
+                    setTimeout(function() { c.close(); }, 500);
+                }
+
             });
+
+            c.on('close', function() {
+
+                const index = conn.indexOf(c);
+                if (index > -1) {
+                conn.splice(index, 1);
+                }
+                status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
+
+            });
+
+
         });
         peer.on('disconnected', function () {
             status.innerHTML = "Connection lost. Please reconnect";
@@ -143,48 +170,13 @@ function main() {
             peer.reconnect();
         });
         peer.on('close', function() {
-            conn = null;
+            conn = [];
             status.innerHTML = "Connection destroyed. Please refresh";
             console.log('Connection destroyed');
         });
         peer.on('error', function (err) {
             console.log(err);
             alert('' + err);
-        });
-    };
-
-    /**
-     * Create the connection between the two Peers.
-     *
-     * Sets up callbacks that handle any events related to the
-     * connection and data received on it.
-     */
-    function join() {
-        // Close old connection
-        if (conn) {
-            conn.close();
-        }
-
-        // Create connection to destination peer specified in the input field
-        conn = peer.connect(recvIdInput.value, {
-            reliable: true
-        });
-
-        conn.on('open', function () {
-            status.innerHTML = "Connected to: " + conn.peer;
-            console.log("Connected to: " + conn.peer);
-
-            // Check URL params for comamnds that should be sent immediately
-            var command = getUrlParam("command");
-            if (command)
-                conn.send(command);
-        });
-        // Handle incoming data (messages only since this is the signal sender)
-        conn.on('data', function (data) {
-            addMessage("<span class=\"peerMsg\">Peer:</span> " + data);
-        });
-        conn.on('close', function () {
-            status.innerHTML = "Connection closed";
         });
     };
 
@@ -253,21 +245,27 @@ function main() {
     });
     // Send message
     sendButton.addEventListener('click', function () {
-        if (conn && conn.open) {
-            var msg = sendMessageBox.value;
-            sendMessageBox.value = "";
-            conn.send(msg);
-            console.log("Sent: " + msg);
-            addMessage("<span class=\"selfMsg\">Self: </span> " + msg);
-        } else {
-            console.log('Connection is closed');
+
+        var msg = sendMessageBox.value;
+        sendMessageBox.value = "";
+        for(const c of conn)
+        {
+            if (c && c.open) {
+                c.send(msg);
+            } else {
+                console.log('Connection is closed');
+            }
         }
+
+        console.log("Sent: " + msg);
+        addMessage("<span class=\"selfMsg\">Self: </span> " + msg);
+
     });
 
     // Clear messages box
     clearMsgsButton.addEventListener('click', clearMessages);
     // Start peer connection on click
-    connectButton.addEventListener('click', join);
+    // connectButton.addEventListener('click', join);
 
     // Since all our callbacks are setup, start the process of obtaining an ID
     initialize();

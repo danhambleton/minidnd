@@ -16,6 +16,9 @@ function main() {
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
+    
+    var recvIdInput = document.getElementById("host-id");
+    var connectButton = document.getElementById("connect-button");
 
     var playerContent = document.getElementById("playerContent");
 
@@ -31,7 +34,7 @@ function main() {
      function initialize() {
         // Create own peer object with connection to shared PeerJS server
         peer = new Peer(null, {
-            host: '9000-plum-barnacle-sgs4697k.ws-us03.gitpod.io',
+            host: process.env.PEERJS_SERVER,
             path: '/',
             secure: true,
             debug: 2
@@ -51,6 +54,7 @@ function main() {
             status.innerHTML = "Awaiting connection...";
         });
         peer.on('connection', function (c) {
+
             // Allow only a single connection
             if (conn && conn.open) {
                 c.on('open', function() {
@@ -64,6 +68,7 @@ function main() {
             console.log("Connected to: " + conn.peer);
             status.innerHTML = "Connected";
             ready();
+
         });
         peer.on('disconnected', function () {
             status.innerHTML = "Connection lost. Please reconnect";
@@ -84,6 +89,19 @@ function main() {
             alert('' + err);
         });
     };
+
+    function getUrlParam(name) {
+        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+        var regexS = "[\\?&]" + name + "=([^&#]*)";
+        var regex = new RegExp(regexS);
+        var results = regex.exec(window.location.href);
+        if (results == null)
+            return null;
+        else
+            return results[1];
+    };
+
+
 
     /**
      * Triggered once a connection has been achieved.
@@ -186,6 +204,39 @@ function main() {
             conn = null;
         });
     }
+
+    function join() {
+
+        // Close old connection
+        if (conn) {
+            conn.close();
+        }
+
+        // Create connection to destination peer specified in the input field
+        conn = peer.connect(recvIdInput.value, {
+            reliable: true
+        });
+
+        conn.on('open', function () {
+            status.innerHTML = "Connected to: " + conn.peer;
+            console.log("Connected to: " + conn.peer);
+
+            // Check URL params for comamnds that should be sent immediately
+            var command = getUrlParam("command");
+            if (command)
+                conn.send(command);
+
+            ready();
+        });
+
+        // Handle incoming data (messages only since this is the signal sender)
+        conn.on('data', function (data) {
+            addMessage("<span class=\"peerMsg\">Peer:</span> " + data);
+        });
+        conn.on('close', function () {
+            status.innerHTML = "Connection closed";
+        });
+    };
 
     function clearContent() {
 
@@ -321,6 +372,8 @@ function main() {
 
     // Clear messages box
     clearMsgsButton.addEventListener('click', clearMessages);
+
+    connectButton.addEventListener('click', join);
 
     initialize();
 }
