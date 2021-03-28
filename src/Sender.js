@@ -33,6 +33,11 @@ function main() {
 
     async function UploadAsset(event) 
     {
+        if(peer.id === null)
+        {
+            console.log("No peer ID. Cannot upload assets...");
+            return;
+        }
         
         let dataTransfer = event.dataTransfer;
         let files = dataTransfer.files;
@@ -107,7 +112,7 @@ function main() {
     function initialize() {
         // Create own peer object with connection to shared PeerJS server
         peer = new Peer(null, {
-            host: '9000-plum-barnacle-sgs4697k.ws-us03.gitpod.io',
+            host: process.env.PEERJS_SERVER,
             path: '/',
             secure: true,
             debug: 2
