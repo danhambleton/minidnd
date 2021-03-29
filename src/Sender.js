@@ -157,13 +157,19 @@ function main() {
                 disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[this.id],null, 2)+ "</h3>";
                 inspector.appendChild(disp);
 
+                var volLabel = document.createElement('h3');
+                volLabel.innerHTML = "Volume: ";
+                inspector.appendChild(volLabel);
+
                 var volSlider = document.createElement("input");
+                inspector.appendChild(volSlider);
                 volSlider.type = "range";
                 volSlider.min = 0.0;
                 volSlider.max = 1.0;
-                volSlider.value = 0.5;
                 volSlider.step = 0.01;
-                inspector.appendChild(volSlider);
+                volSlider.value = stagedContent[this.id].volume;
+
+
                 
 
                 // Update the current slider value (each time you drag the slider handle)
@@ -173,12 +179,16 @@ function main() {
 
                 }
 
+                var panLabel = document.createElement('h3');
+                panLabel.innerHTML = "Pan: ";
+                inspector.appendChild(panLabel);
+
                 var panSlider = document.createElement("input");
                 panSlider.type = "range";
                 panSlider.min = -1.0;
                 panSlider.max = 1.0;
-                panSlider.value = 0.0;
                 panSlider.step = 0.01;
+                panSlider.value = stagedContent[this.id].pan;
                 inspector.appendChild(panSlider);
                 
 

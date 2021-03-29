@@ -136,12 +136,11 @@ function main() {
 
                     }
 
-                    if (params.ui_state === "selected") {
+                    if (params.ui_state === "selected") {                       
                         contentMap[id].media.stop();
-                        contentMap[id].media.play();
                         contentMap[id].media.volume = params.volume;
                         contentMap[id].media.pan = params.pan;
-
+                        contentMap[id].media.play();
                     }
 
                     else if (params.ui_state === "ready") {
