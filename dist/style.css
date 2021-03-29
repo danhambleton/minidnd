@@ -10,9 +10,18 @@ h1 {
 }
 
 h2 {
-    text-align: center;
+    text-align: left;
     font-size: 2em; 
     color:rgb(192, 192, 223)
+}
+
+h3 {
+    text-align: left;
+    font-size: 1.25em; 
+    max-width: 200px;
+    color:rgb(192, 192, 223);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 td {
@@ -26,6 +35,10 @@ input {
 a:visited{ 
 	color: blue; 
 }
+
+img {
+    max-width: 100%;
+  }
 
 .editor {
     max-width: 100%;
@@ -98,6 +111,8 @@ a:visited{
         /* width: 200px;
 
         height: 150px; */
+        outline: none;
+        text-overflow: ellipsis;
     }
 
     .cueElementReady {
@@ -109,19 +124,23 @@ a:visited{
         min-width: 200px;
         /* width: 200px;
         height: 150px; */
-        object-fit: scale-down;
+        object-fit: contain;
+        outline: none;
+        text-overflow: ellipsis;
     }
 
     .cueElementSelected {
         border-radius: 25px;
-        border: 2px solid #424242;
+        border: 2px solid #50f8dca4;
         /* margin: 5px; */
         background: #50f8dca4;
         padding: 20px;
         min-width: 200px;
         /* width: 200px;
         height: 150px; */
-        object-fit: scale-down;
+        object-fit: contain;
+        outline: none;
+        text-overflow: ellipsis;
     }
 
 .imageCue {
@@ -247,3 +266,4 @@ a:visited{
     max-width: 8%;
     max-height: 8%;
   }
+

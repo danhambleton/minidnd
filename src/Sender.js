@@ -16,10 +16,13 @@ function main() {
     var status = document.getElementById("status");
     var message = document.getElementById("message");
 
+    var inspector = document.getElementById("inspector");
+
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
     var playContentButton = document.getElementById("playContent");
+
     // var connectButton = document.getElementById("connect-button");
     var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
@@ -54,7 +57,7 @@ function main() {
     function getShortName(filepath) {
 
         var name = filepath.split(/(\\|\/)/g).pop();
-        return name.length < 8 ? name : name.substring(0, 8) + "...";
+        return name.length < 8 ? name : name.substring(0, 12);
 
     }
 
@@ -121,7 +124,10 @@ function main() {
             src: "",
             type: "",
             content_state: "empty",
-            ui_state: 'empty'
+            ui_state: 'empty',
+            media: null,
+            volume: 0.5,
+            pan: 0.0
         }
         stagingArea.appendChild(b);
 
@@ -134,7 +140,55 @@ function main() {
             if(stagedContent[this.id].ui_state === "ready")
             {
                 this.className = "cueElementSelected";
+                let id = this.id;
                 stagedContent[this.id].ui_state = "selected";
+
+                //display inspector
+                //remove all child elements
+                while (inspector.firstChild) {
+                    inspector.removeChild(inspector.firstChild);
+                }
+
+                //custom elements
+                inspector.title = getShortName(stagedContent[this.id].src);
+                inspector.innerHTML = "Inspector";
+                let disp = document.createElement("button");
+                disp.className = "cueElementReady";
+                disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[this.id],null, 2)+ "</h3>";
+                inspector.appendChild(disp);
+
+                var volSlider = document.createElement("input");
+                volSlider.type = "range";
+                volSlider.min = 0.0;
+                volSlider.max = 1.0;
+                volSlider.value = 0.5;
+                volSlider.step = 0.01;
+                inspector.appendChild(volSlider);
+                
+
+                // Update the current slider value (each time you drag the slider handle)
+                volSlider.oninput = function() {
+                    stagedContent[id].volume = this.value;
+                    disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+
+                }
+
+                var panSlider = document.createElement("input");
+                panSlider.type = "range";
+                panSlider.min = -1.0;
+                panSlider.max = 1.0;
+                panSlider.value = 0.0;
+                panSlider.step = 0.01;
+                inspector.appendChild(panSlider);
+                
+
+                // Update the current slider value (each time you drag the slider handle)
+                panSlider.oninput = function() {
+                    stagedContent[id].pan = this.value;
+                    disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+
+                }
+
             }
             else if(stagedContent[this.id].ui_state === "selected")
             {
