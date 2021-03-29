@@ -3,6 +3,7 @@ import Peer, * as peer from "peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
 import aws from "aws-sdk"
 import { Howl } from "howler";
+import { nanoid } from 'nanoid'
 
 main();
 
@@ -23,13 +24,35 @@ function main() {
 
     var stagingArea = document.getElementById("stagedContent");
 
-    var soundStage = {};
+    //The main container for the content
+    var stagedContent = {};
 
     const s3 = new aws.S3({
         endpoint: process.env.SPACES_ENDPOINT,
         accessKeyId: process.env.SPACES_ACCESS_KEY,
         secretAccessKey: process.env.SPACES_SECRET_KEY,
       });
+
+    function getContentType(filepath)
+    {
+        var ext = split('.').pop().toLowerCase();
+        if(ext === 'mp3' || ext === 'ogg')
+        {
+            return 'audio';
+        }
+
+        if(ext === 'webm' || ext === 'mp4')
+        {
+            return 'video';
+        }
+
+        if(ext === 'png' || ext === 'jpg' || ext === 'jpeg')
+        {
+            return 'image';
+        }
+
+        return 'unknown';
+    }
 
     async function UploadAsset(event) 
     {
@@ -47,7 +70,7 @@ function main() {
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: "assets/audio/" + files[0].name,
+            Key: "assets/" + files[0].name,
             ACL: 'public-read'
         };
 
@@ -67,24 +90,23 @@ function main() {
 
                 var contentParams = {
                     src: url,
-                    type: "audio",
-                    cmd: "play"
+                    type: getContentType(params.Key),
+                    content_state: "ready",
+                    ui_state: 'default'
                 }
 
-                //TODO: super janky. Needs waaay better file extensions filtering.
-                if(params.Key.split('.').pop() === "webm")
-                {
-                    contentParams.type = "video";
-                }
+                stagedContent[nanoid(11)] = contentParams;
 
                 event.srcElement.addEventListener('click', function(){
 
-                    console.log(contentParams);
+                    // console.log(contentParams);
 
-                    for(const c of conn)
-                    {
-                        c.send(contentParams);
-                    }
+                    // for(const c of conn)
+                    // {
+                    //     c.send(contentParams);
+                    // }
+
+                    //handle content state based on click
 
                 });
             }
@@ -96,6 +118,7 @@ function main() {
     {
         var b = document.createElement("button");
         b.className = "cueElementEmpty";
+        b.id = nanoid(11);
         stagingArea.appendChild(b);
 
         // Set up drag-and-drop for the active area
