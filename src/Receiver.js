@@ -1,6 +1,6 @@
 import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
-import {Howl, Howler} from 'howler';
+import { Howl, Howler } from 'howler';
 
 main();
 
@@ -16,7 +16,7 @@ function main() {
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
-    
+
     var recvIdInput = document.getElementById("host-id");
     var connectButton = document.getElementById("connect-button");
 
@@ -31,7 +31,7 @@ function main() {
      * Sets up callbacks that handle any events related to our
      * peer object.
      */
-     function initialize() {
+    function initialize() {
         // Create own peer object with connection to shared PeerJS server
         peer = new Peer(null, {
             host: process.env.PEERJS_SERVER,
@@ -57,9 +57,9 @@ function main() {
 
             // Allow only a single connection
             if (conn && conn.open) {
-                c.on('open', function() {
+                c.on('open', function () {
                     c.send("Already connected to another client");
-                    setTimeout(function() { c.close(); }, 500);
+                    setTimeout(function () { c.close(); }, 500);
                 });
                 return;
             }
@@ -79,7 +79,7 @@ function main() {
             peer._lastServerId = lastPeerId;
             peer.reconnect();
         });
-        peer.on('close', function() {
+        peer.on('close', function () {
             conn = null;
             status.innerHTML = "Connection destroyed. Please refresh";
             console.log('Connection destroyed');
@@ -112,91 +112,90 @@ function main() {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
-            console.log(data.type);
+ 
 
-            if(data.type === "audio")
-            {
-                if(!contentMap[data.src])
-                {
-                    console.log("creating new audio at: " + data.src);
+            //contentMap = data;
 
-                    var track = new Howl({
-                        src: data.src,
-                        volume: 0.5
-                    });
+            for (var id in data) {
 
-                    var contentParams = {
-                        type: "audio",
-                        state: "ready",
-                        media: track
-                    };
+                var params = data[id];
+                if (params.type === "audio") {
+                    console.log(data[id]);
+                    if (!contentMap[id]) {
+                        console.log("creating new audio at: " + params.src);
 
-                    contentMap[data.src] = contentParams;
-                }
+                        var track = new Howl({
+                            src: params.src,
+                            volume: params.volume,
+                            pan: params.pan
+                        });
 
-                else
-                {
-                   console.log(contentMap[data.src]);
-                   
-                    if(contentMap[data.src].state === "ready")
-                   {
-                        contentMap[data.src].media.play();
-                        contentMap[data.src].state = "playing";
-                   }
+                        params.media = track;
 
-                   else if(contentMap[data.src].state === "playing")
-                   {
-                        contentMap[data.src].media.stop();
-                        contentMap[data.src].state = "ready";
-                   }
+                        contentMap[id] = params;
 
-                }
-
-            }
-
-            if(data.type === "image")
-            {
-
-            }
-
-            if(data.type === "video")
-            {
-                if(!contentMap[data.src])
-                {
-                    console.log("creating new video at: " + data.src);
-
-                    var videoCue = document.createElement("video");
-                    videoCue.className = "videoCue";
-                    videoCue.src = data.src;
-                    videoCue.autoplay = true;
-                    videoCue.id = "video-cue";
-
-                    playerContent.appendChild(videoCue);
-
-                    
-
-                    var contentParams = {
-                        type: "video",
-                        state: "playing"
-                    };
-
-                    contentMap[data.src] = contentParams;
-                }
-
-                else
-                {
-                    var videoCue = document.getElementById("video-cue");
-                    
-                    if(videoCue)
-                    {
-                        playerContent.removeChild(videoCue);
                     }
 
-                    contentMap[data.src] = null;
+                    if (params.ui_state === "selected") {
+                        contentMap[id].media.stop();
+                        contentMap[id].media.play();
+                        contentMap[id].media.volume = params.volume;
+                        contentMap[id].media.pan = params.pan;
+
+                    }
+
+                    else if (params.ui_state === "ready") {
+                        contentMap[id].media.stop();
+
+                    }
+
+
+
+                    contentMap[id] = params;
+
+                }
+
+                if (params.type === "image") {
+                    console.log(data[id]);
+                    playerContent.style.backgroundImage = 'url('+ params.src +')';
+                }
+
+                if (params.type === "video") {
+                    //     if(!contentMap[data.src])
+                    //     {
+                    //         console.log("creating new video at: " + data.src);
+
+                    //         var videoCue = document.createElement("video");
+                    //         videoCue.className = "videoCue";
+                    //         videoCue.src = data.src;
+                    //         videoCue.autoplay = true;
+                    //         videoCue.id = "video-cue";
+
+                    //         playerContent.appendChild(videoCue);
+
+
+
+                    //         var contentParams = {
+                    //             type: "video",
+                    //             state: "playing"
+                    //         };
+
+                    //         contentMap[data.src] = contentParams;
+                    //     }
+
+                    //     else
+                    //     {
+                    //         var videoCue = document.getElementById("video-cue");
+
+                    //         if(videoCue)
+                    //         {
+                    //             playerContent.removeChild(videoCue);
+                    //         }
+
+                    //         contentMap[data.src] = null;
+                    //     }
                 }
             }
-
-
 
         });
         conn.on('close', function () {
@@ -242,9 +241,9 @@ function main() {
 
         playerContent.style.backgroundImage = '';
         playerContent.style.background = 'black';
-        
+
         //how to remove map?
-        
+
         // if(mapInstance )
         // {
         //     mapInstance.remove();
@@ -255,7 +254,7 @@ function main() {
     function audioOneState() {
 
         clearContent();
-        
+
         // audioOne.play();
         playerContent.style.background = 'green';
 
@@ -265,10 +264,10 @@ function main() {
     function audioTwoState() {
 
         clearContent();
-        
+
         // audioTwo.play();
         playerContent.style.background = 'blue';
-        
+
 
         return;
     };
@@ -286,7 +285,7 @@ function main() {
     function mapOneState() {
 
         clearContent();
-        
+
         playerContent.style.background = 'orange';
 
         // var w = 33000;
@@ -302,15 +301,15 @@ function main() {
         //   attributionControl: false,
         //   detectRetina: true
         // });
-      
+
         // var _mapBounds = new L.LatLngBounds(
         //     mapInstance.unproject([0, h], mapMaxZoom),
         //   mapInstance.unproject([w, 0], mapMaxZoom));
         //   mapInstance.setMaxBounds(_mapBounds);
-      
+
         // var _mapCenter = mapInstance.unproject([w / 2, h / 2], mapMaxZoom);
         // mapInstance.setView(_mapCenter, 2);
-      
+
         // var _tileLayer = L.tileLayer(
         //   'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
         //   minZoom: mapMinZoom, maxZoom: mapMaxZoom,

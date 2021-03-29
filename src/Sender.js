@@ -19,6 +19,7 @@ function main() {
     var sendMessageBox = document.getElementById("sendMessageBox");
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
+    var playContentButton = document.getElementById("playContent");
     // var connectButton = document.getElementById("connect-button");
     var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
@@ -31,40 +32,43 @@ function main() {
         endpoint: process.env.SPACES_ENDPOINT,
         accessKeyId: process.env.SPACES_ACCESS_KEY,
         secretAccessKey: process.env.SPACES_SECRET_KEY,
-      });
+    });
 
-    function getContentType(filepath)
-    {
-        var ext = split('.').pop().toLowerCase();
-        if(ext === 'mp3' || ext === 'ogg')
-        {
+    function getContentType(filepath) {
+        var ext = filepath.split('.').pop().toLowerCase();
+        if (ext === 'mp3' || ext === 'ogg') {
             return 'audio';
         }
 
-        if(ext === 'webm' || ext === 'mp4')
-        {
+        if (ext === 'webm' || ext === 'mp4') {
             return 'video';
         }
 
-        if(ext === 'png' || ext === 'jpg' || ext === 'jpeg')
-        {
+        if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
             return 'image';
         }
 
         return 'unknown';
     }
 
-    async function UploadAsset(event) 
-    {
-        if(peer.id === null)
-        {
+    function getShortName(filepath) {
+
+        var name = filepath.split(/(\\|\/)/g).pop();
+        return name.length < 8 ? name : name.substring(0, 8) + "...";
+
+    }
+
+    async function UploadAsset(event) {
+        if (peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
             return;
         }
-        
+
         let dataTransfer = event.dataTransfer;
         let files = dataTransfer.files;
         let asset = files[0];
+
+        var id = event.srcElement.id;
 
         // Add a file to a Space
         var params = {
@@ -76,13 +80,12 @@ function main() {
 
         event.srcElement.innerHTML = "<h2>Uploading</h2>";
 
-        s3.putObject(params, function(err, data) {
+        s3.putObject(params, function (err, data) {
             if (err) console.log(err, err.stack);
-            else     
-            {
+            else {
                 console.log(data);
                 event.srcElement.className = "cueElementReady";
-                event.srcElement.innerHTML = "<h2>" + params.Key.split(/(\\|\/)/g).pop() + "</h2>";
+                event.srcElement.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
 
                 //set up audio for this element
 
@@ -92,37 +95,55 @@ function main() {
                     src: url,
                     type: getContentType(params.Key),
                     content_state: "ready",
-                    ui_state: 'default'
+                    ui_state: 'ready',
+                    media: null,
+                    volume: 0.5,
+                    pan: 0.0
                 }
 
-                stagedContent[nanoid(11)] = contentParams;
+                stagedContent[id] = contentParams;
 
-                event.srcElement.addEventListener('click', function(){
+                if(contentParams.type === "image")
+                {
+                    event.srcElement.style.backgroundImage = 'url('+ contentParams.src +')';
+                }
 
-                    // console.log(contentParams);
-
-                    // for(const c of conn)
-                    // {
-                    //     c.send(contentParams);
-                    // }
-
-                    //handle content state based on click
-
-                });
             }
         });
     }
 
     var stagingArea = document.getElementById("contentGrid");
-    for(var i = 0; i < 16; i++)
-    {
+    for (var i = 0; i < 16; i++) {
         var b = document.createElement("button");
         b.className = "cueElementEmpty";
-        b.id = nanoid(11);
+        b.id = "cb_" + i.toString().padStart(2, '0');
+        stagedContent[b.id] = {
+            src: "",
+            type: "",
+            content_state: "empty",
+            ui_state: 'empty'
+        }
         stagingArea.appendChild(b);
 
         // Set up drag-and-drop for the active area
-        setupDragAndDrop(b, UploadAsset);   
+        setupDragAndDrop(b, UploadAsset);
+
+        b.addEventListener('click', function () {
+
+            //TODO: set options
+            if(stagedContent[this.id].ui_state === "ready")
+            {
+                this.className = "cueElementSelected";
+                stagedContent[this.id].ui_state = "selected";
+            }
+            else if(stagedContent[this.id].ui_state === "selected")
+            {
+                this.className = "cueElementReady";
+                stagedContent[this.id].ui_state = "ready";
+            }
+
+            console.log(stagedContent);
+        });
     }
 
 
@@ -155,32 +176,30 @@ function main() {
             status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
         });
         peer.on('connection', function (c) {
-            
-            c.on('open', function() {
+
+            c.on('open', function () {
                 // c.send("Sender does not accept incoming connections");
                 // setTimeout(function() { c.close(); }, 500);
-                if(conn.length < process.env.MAX_PEERS)
-                {
+                if (conn.length < process.env.MAX_PEERS) {
                     conn.push(c);
                     c.send("Connected with host: " + peer.id);
                     addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
                     status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
 
                 }
-                else
-                {
+                else {
                     c.send("Host has reached max number of peers. Disconnecting...");
                     addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
-                    setTimeout(function() { c.close(); }, 500);
+                    setTimeout(function () { c.close(); }, 500);
                 }
 
             });
 
-            c.on('close', function() {
+            c.on('close', function () {
 
                 const index = conn.indexOf(c);
                 if (index > -1) {
-                conn.splice(index, 1);
+                    conn.splice(index, 1);
                 }
                 status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
 
@@ -197,7 +216,7 @@ function main() {
             peer._lastServerId = lastPeerId;
             peer.reconnect();
         });
-        peer.on('close', function() {
+        peer.on('close', function () {
             conn = [];
             status.innerHTML = "Connection destroyed. Please refresh";
             console.log('Connection destroyed');
@@ -229,7 +248,7 @@ function main() {
      * Send a signal via the peer connection and add it to the log.
      * This will only occur if the connection is still alive.
      */
-     function signal(sigName) {
+    function signal(sigName) {
         if (conn && conn.open) {
             conn.send(sigName);
             console.log(sigName + " signal sent");
@@ -276,8 +295,7 @@ function main() {
 
         var msg = sendMessageBox.value;
         sendMessageBox.value = "";
-        for(const c of conn)
-        {
+        for (const c of conn) {
             if (c && c.open) {
                 c.send(msg);
             } else {
@@ -294,6 +312,21 @@ function main() {
     clearMsgsButton.addEventListener('click', clearMessages);
     // Start peer connection on click
     // connectButton.addEventListener('click', join);
+
+    playContentButton.addEventListener('click', function(){
+
+        //send staged content to all connected peers
+        for(const c of conn)
+        {
+
+            if (c && c.open) {
+                c.send(stagedContent);
+            } else {
+                console.log('Connection is closed');
+            }
+        }
+
+    });
 
     // Since all our callbacks are setup, start the process of obtaining an ID
     initialize();
