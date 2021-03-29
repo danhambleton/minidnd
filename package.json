@@ -4,7 +4,8 @@
   "description": "Add on DnD features",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
   "dependencies": {
     "aws-sdk": "^2.864.0",
     "dotenv": "^8.2.0",
+    "express": "^4.17.1",
     "file-system": "^2.2.2",
     "howler": "^2.2.1",
     "http-server": "^0.12.3",

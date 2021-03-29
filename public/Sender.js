@@ -1,8 +1,8 @@
-import * as L from "leaflet"
-import Peer, * as peer from "peerjs"
+// import * as L from "leaflet"
+import Peer, * as peer from "/peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
-import aws from "aws-sdk"
-import { Howl } from "howler";
+import aws from "/aws-sdk"
+// import { Howl } from "howler";
 
 main();
 
