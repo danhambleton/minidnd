@@ -1,6 +1,7 @@
 import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
-import { Howl, Howler } from 'howler';
+// import { Howl, Howler } from 'howler'
+import * as Pizzicato from "pizzicato"
 
 main();
 
@@ -23,6 +24,19 @@ function main() {
     var playerContent = document.getElementById("playerContent");
 
     var contentMap = {};
+
+
+    //test pizz
+    // var sound = new Pizzicato.Sound({ 
+    //     source: 'file',
+    //     options: { path: 'https://danbleton.nyc3.digitaloceanspaces.com/assets/SingingIce.mp3' }
+    // });
+
+
+    // const sound = new Pizzicato.Sound('https://danbleton.nyc3.digitaloceanspaces.com/assets/SingingIce.mp3', () => {
+    //     sound.play();
+    //   });
+
 
 
     /**
@@ -112,34 +126,47 @@ function main() {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
- 
-
-            //contentMap = data;
-
             for (var id in data) {
 
-                var params = data[id];
+                let params = data[id];
                 if (params.type === "audio") {
                     console.log(data[id]);
                     if (!contentMap[id]) {
                         console.log("creating new audio at: " + params.src);
 
-                        var track = new Howl({
-                            src: params.src,
-                            volume: params.volume,
-                            pan: params.pan
+                        const track = new Pizzicato.Sound({
+                            source: 'file',
+                            options: {
+                                path: params.src
+                            }
+                        }, function () {
+
+                            let stereoPanner = new Pizzicato.Effects.StereoPanner({
+                                pan: params.pan
+                            });
+
+                            console.log("pan amount" + params.pan);
+                            params.media = track;
+
+                            console.log('sound file loaded!');
+                            params.media.addEffect(stereoPanner);
+                            params.media.volume = params.volume;
+
+                            //handle special case where sound needs to load and then play
+                            if (params.ui_state === "selected") {
+                                params.media.play();
+                            }
+
+                            contentMap[id] = params;
+
                         });
-
-                        params.media = track;
-
-                        contentMap[id] = params;
 
                     }
 
-                    if (params.ui_state === "selected") {                       
+                    else if (params.ui_state === "selected") {
                         contentMap[id].media.stop();
                         contentMap[id].media.volume = params.volume;
-                        contentMap[id].media.pan = params.pan;
+                        // contentMap[id].media.pan = params.pan;
                         contentMap[id].media.play();
                     }
 
@@ -156,7 +183,7 @@ function main() {
 
                 if (params.type === "image") {
                     console.log(data[id]);
-                    playerContent.style.backgroundImage = 'url('+ params.src +')';
+                    playerContent.style.backgroundImage = 'url(' + params.src + ')';
                 }
 
                 if (params.type === "video") {

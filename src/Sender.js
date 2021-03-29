@@ -2,7 +2,6 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
 import aws from "aws-sdk"
-import { Howl } from "howler";
 import { nanoid } from 'nanoid'
 
 main();
@@ -219,7 +218,7 @@ function main() {
      */
     function initialize() {
         // Create own peer object with connection to shared PeerJS server
-        peer = new Peer(null, {
+        peer = new Peer(process.env.HOST_ID, {
             host: process.env.PEERJS_SERVER,
             path: '/',
             secure: true,
