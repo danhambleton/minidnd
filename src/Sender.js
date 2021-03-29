@@ -99,6 +99,7 @@ function main() {
                     content_state: "ready",
                     ui_state: 'ready',
                     media: null,
+                    effects: [],
                     volume: 0.5,
                     pan: 0.0
                 }
@@ -125,6 +126,7 @@ function main() {
             content_state: "empty",
             ui_state: 'empty',
             media: null,
+            effects: [],
             volume: 0.5,
             pan: 0.0
         }

@@ -128,56 +128,50 @@ function main() {
 
             for (var id in data) {
 
-                let params = data[id];
+                var params = data[id];
+                
                 if (params.type === "audio") {
-                    console.log(data[id]);
+
                     if (!contentMap[id]) {
                         console.log("creating new audio at: " + params.src);
 
-                        const track = new Pizzicato.Sound({
+                        params.media = new Pizzicato.Sound({
                             source: 'file',
                             options: {
                                 path: params.src
                             }
                         }, function () {
-
-                            let stereoPanner = new Pizzicato.Effects.StereoPanner({
-                                pan: params.pan
+                
+                            var stereoPanner = new Pizzicato.Effects.StereoPanner({
+                                pan: parseFloat(params.pan)
                             });
-
-                            console.log("pan amount" + params.pan);
-                            params.media = track;
-
+                
                             console.log('sound file loaded!');
                             params.media.addEffect(stereoPanner);
-                            params.media.volume = params.volume;
-
-                            //handle special case where sound needs to load and then play
-                            if (params.ui_state === "selected") {
-                                params.media.play();
-                            }
-
+                            params.media.volume = parseFloat(params.volume);
+                            params.effects[0] = stereoPanner;
+                
+                            //handle special case where sound needs to load and then play                
+                            params.media.play();               
                             contentMap[id] = params;
-
                         });
 
                     }
 
                     else if (params.ui_state === "selected") {
                         contentMap[id].media.stop();
-                        contentMap[id].media.volume = params.volume;
-                        // contentMap[id].media.pan = params.pan;
+                        contentMap[id].media.volume = parseFloat(params.volume);
+                        contentMap[id].effects[0].pan = parseFloat(params.pan);
                         contentMap[id].media.play();
                     }
 
                     else if (params.ui_state === "ready") {
                         contentMap[id].media.stop();
-
                     }
 
-
-
-                    contentMap[id] = params;
+                    else if (params.ui_state === "empty") {
+                        contentMap[id] = params;
+                    }
 
                 }
 
@@ -373,6 +367,12 @@ function main() {
     function clearMessages() {
         message.innerHTML = "";
         addMessage("Msgs cleared");
+
+
+
+
+
+
     }
 
     // Listen for enter in message box
