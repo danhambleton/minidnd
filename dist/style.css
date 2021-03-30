@@ -17,7 +17,7 @@ h2 {
 
 h3 {
     text-align: left;
-    font-size: 1.25em; 
+    font-size: 1.1em; 
     max-width: 200px;
     color:rgb(192, 192, 223);
     overflow: hidden;
@@ -47,7 +47,7 @@ img {
     background: rgba(22, 22, 22, 0.308);
 
     display: grid;
-    grid-template-columns: 50px 70fr 20fr;
+    grid-template-columns: 50px 70fr 300px;
     grid-template-rows: 40px 60fr 30fr;
     grid-gap: 5px;
 }
@@ -144,9 +144,9 @@ img {
     }
 
 .imageCue {
-    width: 100fr;
-    height: 100fr;
-    object-fit: scale-down;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 
 }
 

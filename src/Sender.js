@@ -38,7 +38,7 @@ function main() {
 
     function getContentType(filepath) {
         var ext = filepath.split('.').pop().toLowerCase();
-        if (ext === 'mp3' || ext === 'ogg') {
+        if (ext === 'mp3' || ext === 'ogg' || ext === 'wav') {
             return 'audio';
         }
 
@@ -96,12 +96,14 @@ function main() {
                 var contentParams = {
                     src: url,
                     type: getContentType(params.Key),
-                    content_state: "ready",
+                    content_state: "none",
                     ui_state: 'ready',
                     media: null,
                     effects: [],
                     volume: 0.5,
-                    pan: 0.0
+                    pan: 0.0,
+                    loop: 0,
+                    reverb: 0
                 }
 
                 stagedContent[id] = contentParams;
@@ -128,7 +130,9 @@ function main() {
             media: null,
             effects: [],
             volume: 0.5,
-            pan: 0.0
+            pan: 0.0,
+            loop: 0,
+            reverb: 0
         }
         stagingArea.appendChild(b);
 
@@ -151,15 +155,14 @@ function main() {
                 }
 
                 //custom elements
-                inspector.title = getShortName(stagedContent[this.id].src);
-                inspector.innerHTML = "Inspector";
-                let disp = document.createElement("button");
-                disp.className = "cueElementReady";
-                disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[this.id],null, 2)+ "</h3>";
-                inspector.appendChild(disp);
+                // inspector.title = getShortName(stagedContent[this.id].src);
+                inspector.innerHTML = "<h1>" + getShortName(stagedContent[this.id].src)+ "</h1>";
+                // let disp = document.createElement("button");
+                // disp.className = "cueElementReady";
+                // disp.innerHTML = "<h3>" + getShortName(stagedContent[this.id].src)+ "</h3>";
+                // inspector.appendChild(disp);
 
                 var volLabel = document.createElement('h3');
-                volLabel.innerHTML = "Volume: ";
                 inspector.appendChild(volLabel);
 
                 var volSlider = document.createElement("input");
@@ -170,18 +173,16 @@ function main() {
                 volSlider.step = 0.01;
                 volSlider.value = stagedContent[this.id].volume;
 
-
-                
+                volLabel.innerHTML = "Volume: " + volSlider.value;
 
                 // Update the current slider value (each time you drag the slider handle)
                 volSlider.oninput = function() {
                     stagedContent[id].volume = this.value;
-                    disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-
+                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                    volLabel.innerHTML = "Volume: " + volSlider.value;
                 }
 
                 var panLabel = document.createElement('h3');
-                panLabel.innerHTML = "Pan: ";
                 inspector.appendChild(panLabel);
 
                 var panSlider = document.createElement("input");
@@ -191,13 +192,51 @@ function main() {
                 panSlider.step = 0.01;
                 panSlider.value = stagedContent[this.id].pan;
                 inspector.appendChild(panSlider);
-                
+                panLabel.innerHTML = "Pan: " + panSlider.value;
 
                 // Update the current slider value (each time you drag the slider handle)
                 panSlider.oninput = function() {
                     stagedContent[id].pan = this.value;
-                    disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                    panLabel.innerHTML = "Pan: " + panSlider.value;
+                }
 
+                var loopLable = document.createElement('h3');
+                inspector.appendChild(loopLable);
+
+                var loopSlider = document.createElement("input");
+                loopSlider.type = "range";
+                loopSlider.min = 0.0;
+                loopSlider.max = 1.0;
+                loopSlider.step = 1.0;
+                loopSlider.value = stagedContent[this.id].loop;
+                inspector.appendChild(loopSlider);
+                loopLable.innerHTML = "Loop: " + loopSlider.value;
+
+                // Update the current slider value (each time you drag the slider handle)
+                loopSlider.oninput = function() {
+                    stagedContent[id].loop = this.value;
+                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                    loopLable.innerHTML = "Loop: " + loopSlider.value;
+                }
+
+                var reverbLabel = document.createElement('h3');
+                inspector.appendChild(reverbLabel);
+
+                var reverbSlider = document.createElement("input");
+                reverbSlider.type = "range";
+                reverbSlider.min = 0.0;
+                reverbSlider.max = 1.0;
+                reverbSlider.step = 0.1;
+                reverbSlider.value = stagedContent[this.id].reverb;
+                inspector.appendChild(reverbSlider);
+                reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
+
+                // Update the current slider value (each time you drag the slider handle)
+                reverbSlider.oninput = function() {
+                    stagedContent[id].reverb = this.value;
+                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                    reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
                 }
 
             }

@@ -126,34 +126,57 @@ function main() {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
-            for (var id in data) {
+            console.log("incoming map...");
+            console.log(data);
 
-                var params = data[id];
-                
+            console.log("current map...");
+            console.log(contentMap);
+
+            for (const id in data) {
+
+                const params = data[id];
+
                 if (params.type === "audio") {
 
-                    if (!contentMap[id]) {
+                    if (!contentMap[id] || params.src != contentMap[id].src) {
                         console.log("creating new audio at: " + params.src);
 
-                        params.media = new Pizzicato.Sound({
+                        let track = new Pizzicato.Sound({
                             source: 'file',
                             options: {
                                 path: params.src
                             }
                         }, function () {
-                
+
                             var stereoPanner = new Pizzicato.Effects.StereoPanner({
                                 pan: parseFloat(params.pan)
                             });
-                
+
+                            var reverb = new Pizzicato.Effects.Reverb({
+                                time: parseFloat(params.reverb),
+                                decay: 0.2,
+                                reverse: false,
+                                mix: 0.5
+                            });
+
                             console.log('sound file loaded!');
-                            params.media.addEffect(stereoPanner);
-                            params.media.volume = parseFloat(params.volume);
-                            params.effects[0] = stereoPanner;
-                
-                            //handle special case where sound needs to load and then play                
-                            params.media.play();               
+                            track.addEffect(stereoPanner);
+                            track.addEffect(reverb);
+                            track.volume = parseFloat(params.volume);
+                            track.loop = parseFloat(params.loop) < 0.5 ? false : true;
+
                             contentMap[id] = params;
+
+                            contentMap[id].media = track;
+
+                            contentMap[id].effects[0] = stereoPanner;
+                            contentMap[id].effects[1] = reverb;
+                            contentMap[id].content_state = "ready";
+
+                            //handle special case where sound needs to load and then play 
+                            if (params.ui_state === "selected") {
+                                contentMap[id].media.play();
+                            }
                         });
 
                     }
@@ -162,6 +185,8 @@ function main() {
                         contentMap[id].media.stop();
                         contentMap[id].media.volume = parseFloat(params.volume);
                         contentMap[id].effects[0].pan = parseFloat(params.pan);
+                        contentMap[id].effects[1].time = parseFloat(params.reverb);
+                        contentMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
                         contentMap[id].media.play();
                     }
 
@@ -176,44 +201,73 @@ function main() {
                 }
 
                 if (params.type === "image") {
-                    console.log(data[id]);
-                    playerContent.style.backgroundImage = 'url(' + params.src + ')';
+                    // console.log(data[id]);
+                    // playerContent.style.backgroundImage = 'url(' + params.src + ')';
+                    if (params.ui_state === "selected") {
+                        if (!contentMap[id] || params.src != contentMap[id].src) {
+                            console.log("creating new video at: " + params.src);
+
+                            var videoCue = document.getElementById("video-cue");
+
+                            if (videoCue) {
+                                playerContent.removeChild(videoCue);
+                            }
+
+                            videoCue = document.createElement("img");
+                            videoCue.className = "videoCue";
+                            videoCue.src = params.src;
+                            // videoCue.autoplay = true;
+                            videoCue.id = "video-cue";
+
+                            playerContent.appendChild(videoCue);
+
+                            contentMap[id] = params;
+                        }
+                    }
+                    else if(params.ui_state === "empty") {
+                        var videoCue = document.getElementById("video-cue");
+
+                        if (videoCue) {
+                            playerContent.removeChild(videoCue);
+                        }
+
+                        contentMap[id] = null;
+                    }
                 }
 
                 if (params.type === "video") {
-                    //     if(!contentMap[data.src])
-                    //     {
-                    //         console.log("creating new video at: " + data.src);
 
-                    //         var videoCue = document.createElement("video");
-                    //         videoCue.className = "videoCue";
-                    //         videoCue.src = data.src;
-                    //         videoCue.autoplay = true;
-                    //         videoCue.id = "video-cue";
+                    if (params.ui_state === "selected") {
+                        if (!contentMap[id] || params.src != contentMap[id].src) {
+                            console.log("creating new video at: " + params.src);
 
-                    //         playerContent.appendChild(videoCue);
+                            var videoCue = document.getElementById("video-cue");
 
+                            if (videoCue) {
+                                playerContent.removeChild(videoCue);
+                            }
 
+                            videoCue = document.createElement("video");
+                            videoCue.className = "videoCue";
+                            videoCue.src = params.src;
+                            videoCue.autoplay = true;
+                            videoCue.id = "video-cue";
 
-                    //         var contentParams = {
-                    //             type: "video",
-                    //             state: "playing"
-                    //         };
+                            playerContent.appendChild(videoCue);
 
-                    //         contentMap[data.src] = contentParams;
-                    //     }
+                            contentMap[id] = params;
+                        }
+                    }
 
-                    //     else
-                    //     {
-                    //         var videoCue = document.getElementById("video-cue");
+                    else if(params.ui_state === "empty") {{
+                        var videoCue = document.getElementById("video-cue");
 
-                    //         if(videoCue)
-                    //         {
-                    //             playerContent.removeChild(videoCue);
-                    //         }
+                        if (videoCue) {
+                            playerContent.removeChild(videoCue);
+                        }
 
-                    //         contentMap[data.src] = null;
-                    //     }
+                        contentMap[id] = null;
+                    }
                 }
             }
 
