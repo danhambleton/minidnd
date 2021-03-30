@@ -259,7 +259,7 @@ function main() {
                         }
                     }
 
-                    else if(params.ui_state === "empty") {{
+                    else if(params.ui_state === "empty") {
                         var videoCue = document.getElementById("video-cue");
 
                         if (videoCue) {
