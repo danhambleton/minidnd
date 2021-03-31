@@ -60,6 +60,68 @@ function main() {
 
     }
 
+    async function LoadWorkspace() {
+
+        if (peer.id === null) {
+            console.log("No peer ID. Cannot upload assets...");
+            return;
+        }
+
+        // let dataTransfer = event.dataTransfer;
+        // let files = dataTransfer.files;
+        let asset;// = JSON.stringify(stagedContent);
+
+        // Add a file to a Space
+        var params = {
+            Body: asset,
+            Bucket: process.env.SPACES_BUCKET,
+            Key: peer.id + "/manifest.json",
+
+        };
+
+        s3.getObject(params, function (err, data) {
+            if (err) console.log(err, err.stack);
+            else {
+                //console.log(data.Body.toString());
+
+                stagedContent = JSON.parse(data.Body);
+
+                console.log(stagedContent);
+            }
+        });
+    }
+
+    async function SaveWorkspace() {
+
+        if (peer.id === null) {
+            console.log("No peer ID. Cannot upload assets...");
+            return;
+        }
+
+        // let dataTransfer = event.dataTransfer;
+        // let files = dataTransfer.files;
+        let asset = JSON.stringify(stagedContent);
+
+        // Add a file to a Space
+        var params = {
+            Body: asset,
+            Bucket: process.env.SPACES_BUCKET,
+            Key: peer.id + "/manifest.json",
+            ACL: 'public-read',
+            ContentType: 'application/json'
+        };
+
+        s3.putObject(params, function (err, data) {
+            if (err) console.log(err, err.stack);
+            else {
+                console.log(data);
+
+
+                LoadWorkspace();
+            }
+        });
+    }
+
     async function UploadAsset(event) {
         if (peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
@@ -76,7 +138,7 @@ function main() {
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: "assets/" + files[0].name,
+            Key: peer.id + "/" + files[0].name,
             ACL: 'public-read'
         };
 
@@ -112,6 +174,9 @@ function main() {
                 {
                     event.srcElement.style.backgroundImage = 'url('+ contentParams.src +')';
                 }
+
+                SaveWorkspace();
+
 
             }
         });
