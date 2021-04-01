@@ -60,7 +60,7 @@ function main() {
 
     }
 
-    async function LoadWorkspace() {
+    async function LoadWorkspace(callback) {
 
         if (peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
@@ -87,11 +87,13 @@ function main() {
                 stagedContent = JSON.parse(data.Body);
 
                 console.log(stagedContent);
+
+                callback();
             }
         });
     }
 
-    async function SaveWorkspace() {
+    async function SaveWorkspace(manifestJSON) {
 
         if (peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
@@ -100,7 +102,7 @@ function main() {
 
         // let dataTransfer = event.dataTransfer;
         // let files = dataTransfer.files;
-        let asset = JSON.stringify(stagedContent);
+        let asset = manifestJSON;//JSON.stringify(stagedContent);
 
         // Add a file to a Space
         var params = {
@@ -115,9 +117,6 @@ function main() {
             if (err) console.log(err, err.stack);
             else {
                 console.log(data);
-
-
-                LoadWorkspace();
             }
         });
     }
@@ -175,146 +174,181 @@ function main() {
                     event.srcElement.style.backgroundImage = 'url('+ contentParams.src +')';
                 }
 
-                SaveWorkspace();
+                SaveWorkspace(JSON.stringify(stagedContent));
 
 
             }
         });
     }
 
-    var stagingArea = document.getElementById("contentGrid");
-    for (var i = 0; i < 16; i++) {
-        var b = document.createElement("button");
-        b.className = "cueElementEmpty";
-        b.id = "cb_" + i.toString().padStart(2, '0');
-        stagedContent[b.id] = {
-            src: "",
-            type: "",
-            content_state: "empty",
-            ui_state: 'empty',
-            media: null,
-            effects: [],
-            volume: 0.5,
-            pan: 0.0,
-            loop: 0,
-            reverb: 0
-        }
-        stagingArea.appendChild(b);
-
-        // Set up drag-and-drop for the active area
-        setupDragAndDrop(b, UploadAsset);
-
-        b.addEventListener('click', function () {
-
-            //TODO: set options
-            if(stagedContent[this.id].ui_state === "ready")
-            {
-                this.className = "cueElementSelected";
-                let id = this.id;
-                stagedContent[this.id].ui_state = "selected";
-
-                //display inspector
-                //remove all child elements
-                while (inspector.firstChild) {
-                    inspector.removeChild(inspector.firstChild);
-                }
-
-                //custom elements
-                // inspector.title = getShortName(stagedContent[this.id].src);
-                inspector.innerHTML = "<h1>" + getShortName(stagedContent[this.id].src)+ "</h1>";
-                // let disp = document.createElement("button");
-                // disp.className = "cueElementReady";
-                // disp.innerHTML = "<h3>" + getShortName(stagedContent[this.id].src)+ "</h3>";
-                // inspector.appendChild(disp);
-
-                var volLabel = document.createElement('h3');
-                inspector.appendChild(volLabel);
-
-                var volSlider = document.createElement("input");
-                inspector.appendChild(volSlider);
-                volSlider.type = "range";
-                volSlider.min = 0.0;
-                volSlider.max = 1.0;
-                volSlider.step = 0.01;
-                volSlider.value = stagedContent[this.id].volume;
-
-                volLabel.innerHTML = "Volume: " + volSlider.value;
-
-                // Update the current slider value (each time you drag the slider handle)
-                volSlider.oninput = function() {
-                    stagedContent[id].volume = this.value;
-                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+    function BuildContentGrid()
+    {
+        var stagingArea = document.getElementById("contentGrid");
+        for (var i = 0; i < 16; i++) {
+            var b = document.createElement("button");
+            b.className = "cueElementEmpty";
+            b.id = "cb_" + i.toString().padStart(2, '0');
+            stagedContent[b.id] = {
+                src: "",
+                type: "",
+                content_state: "empty",
+                ui_state: 'empty',
+                media: null,
+                effects: [],
+                volume: 0.5,
+                pan: 0.0,
+                loop: 0,
+                reverb: 0
+            }
+            stagingArea.appendChild(b);
+    
+            // Set up drag-and-drop for the active area
+            setupDragAndDrop(b, UploadAsset);
+    
+            b.addEventListener('click', function () {
+    
+                //TODO: set options
+                if(stagedContent[this.id].ui_state === "ready")
+                {
+                    this.className = "cueElementSelected";
+                    let id = this.id;
+                    stagedContent[this.id].ui_state = "selected";
+    
+                    //display inspector
+                    //remove all child elements
+                    while (inspector.firstChild) {
+                        inspector.removeChild(inspector.firstChild);
+                    }
+    
+                    //custom elements
+                    // inspector.title = getShortName(stagedContent[this.id].src);
+                    inspector.innerHTML = "<h1>" + getShortName(stagedContent[this.id].src)+ "</h1>";
+                    // let disp = document.createElement("button");
+                    // disp.className = "cueElementReady";
+                    // disp.innerHTML = "<h3>" + getShortName(stagedContent[this.id].src)+ "</h3>";
+                    // inspector.appendChild(disp);
+    
+                    var volLabel = document.createElement('h3');
+                    inspector.appendChild(volLabel);
+    
+                    var volSlider = document.createElement("input");
+                    inspector.appendChild(volSlider);
+                    volSlider.type = "range";
+                    volSlider.min = 0.0;
+                    volSlider.max = 1.0;
+                    volSlider.step = 0.01;
+                    volSlider.value = stagedContent[this.id].volume;
+    
                     volLabel.innerHTML = "Volume: " + volSlider.value;
-                }
-
-                var panLabel = document.createElement('h3');
-                inspector.appendChild(panLabel);
-
-                var panSlider = document.createElement("input");
-                panSlider.type = "range";
-                panSlider.min = -1.0;
-                panSlider.max = 1.0;
-                panSlider.step = 0.01;
-                panSlider.value = stagedContent[this.id].pan;
-                inspector.appendChild(panSlider);
-                panLabel.innerHTML = "Pan: " + panSlider.value;
-
-                // Update the current slider value (each time you drag the slider handle)
-                panSlider.oninput = function() {
-                    stagedContent[id].pan = this.value;
-                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+    
+                    // Update the current slider value (each time you drag the slider handle)
+                    volSlider.oninput = function() {
+                        stagedContent[id].volume = this.value;
+                        // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                        volLabel.innerHTML = "Volume: " + volSlider.value;
+                    }
+    
+                    var panLabel = document.createElement('h3');
+                    inspector.appendChild(panLabel);
+    
+                    var panSlider = document.createElement("input");
+                    panSlider.type = "range";
+                    panSlider.min = -1.0;
+                    panSlider.max = 1.0;
+                    panSlider.step = 0.01;
+                    panSlider.value = stagedContent[this.id].pan;
+                    inspector.appendChild(panSlider);
                     panLabel.innerHTML = "Pan: " + panSlider.value;
-                }
-
-                var loopLable = document.createElement('h3');
-                inspector.appendChild(loopLable);
-
-                var loopSlider = document.createElement("input");
-                loopSlider.type = "range";
-                loopSlider.min = 0.0;
-                loopSlider.max = 1.0;
-                loopSlider.step = 1.0;
-                loopSlider.value = stagedContent[this.id].loop;
-                inspector.appendChild(loopSlider);
-                loopLable.innerHTML = "Loop: " + loopSlider.value;
-
-                // Update the current slider value (each time you drag the slider handle)
-                loopSlider.oninput = function() {
-                    stagedContent[id].loop = this.value;
-                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+    
+                    // Update the current slider value (each time you drag the slider handle)
+                    panSlider.oninput = function() {
+                        stagedContent[id].pan = this.value;
+                        // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                        panLabel.innerHTML = "Pan: " + panSlider.value;
+                    }
+    
+                    var loopLable = document.createElement('h3');
+                    inspector.appendChild(loopLable);
+    
+                    var loopSlider = document.createElement("input");
+                    loopSlider.type = "range";
+                    loopSlider.min = 0.0;
+                    loopSlider.max = 1.0;
+                    loopSlider.step = 1.0;
+                    loopSlider.value = stagedContent[this.id].loop;
+                    inspector.appendChild(loopSlider);
                     loopLable.innerHTML = "Loop: " + loopSlider.value;
-                }
-
-                var reverbLabel = document.createElement('h3');
-                inspector.appendChild(reverbLabel);
-
-                var reverbSlider = document.createElement("input");
-                reverbSlider.type = "range";
-                reverbSlider.min = 0.0;
-                reverbSlider.max = 1.0;
-                reverbSlider.step = 0.1;
-                reverbSlider.value = stagedContent[this.id].reverb;
-                inspector.appendChild(reverbSlider);
-                reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
-
-                // Update the current slider value (each time you drag the slider handle)
-                reverbSlider.oninput = function() {
-                    stagedContent[id].reverb = this.value;
-                    // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+    
+                    // Update the current slider value (each time you drag the slider handle)
+                    loopSlider.oninput = function() {
+                        stagedContent[id].loop = this.value;
+                        // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                        loopLable.innerHTML = "Loop: " + loopSlider.value;
+                    }
+    
+                    var reverbLabel = document.createElement('h3');
+                    inspector.appendChild(reverbLabel);
+    
+                    var reverbSlider = document.createElement("input");
+                    reverbSlider.type = "range";
+                    reverbSlider.min = 0.0;
+                    reverbSlider.max = 1.0;
+                    reverbSlider.step = 0.1;
+                    reverbSlider.value = stagedContent[this.id].reverb;
+                    inspector.appendChild(reverbSlider);
                     reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
+    
+                    // Update the current slider value (each time you drag the slider handle)
+                    reverbSlider.oninput = function() {
+                        stagedContent[id].reverb = this.value;
+                        // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+                        reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
+                    }
+    
+                }
+                else if(stagedContent[this.id].ui_state === "selected")
+                {
+                    this.className = "cueElementReady";
+                    stagedContent[this.id].ui_state = "ready";
+                }
+    
+                console.log(stagedContent);
+            });
+        }
+    }
+   
+    //Load grid contents from manifest
+    function LoadContentGrid() {
+
+        for (var i = 0; i < 16; i++) {
+
+            var id = "cb_" + i.toString().padStart(2, '0');
+            if(stagedContent[id])
+            {
+                var b = document.getElementById(id);
+
+                if(b)
+                {
+                    b.className = "cueElementReady";
+                    b.innerHTML = "<h2>" + getShortName(stagedContent[id].src) + "</h2>";
+
+                    if(stagedContent[id].ui_state === "selected")
+                    {
+                        b.className = "cueElementSelected";
+                    }
+                    
+                    if(stagedContent[id].type === "image")
+                    {
+                        b.style.backgroundImage = 'url('+ stagedContent[id].src +')';
+                    }
                 }
 
             }
-            else if(stagedContent[this.id].ui_state === "selected")
-            {
-                this.className = "cueElementReady";
-                stagedContent[this.id].ui_state = "ready";
-            }
 
-            console.log(stagedContent);
-        });
+
+        }
+
     }
-
 
     /**
      * Create the Peer object for our end of the connection.
@@ -343,6 +377,10 @@ function main() {
             console.log('ID: ' + peer.id);
             hostID.innerHTML = "ID: " + peer.id;
             status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
+
+            //load the content from manifest on server
+            LoadWorkspace(LoadContentGrid);
+
         });
         peer.on('connection', function (c) {
 
@@ -451,6 +489,9 @@ function main() {
         message.innerHTML = "";
         addMessage("Msgs cleared");
     };
+
+    //Build content grid
+    BuildContentGrid();
 
     // Listen for enter in message box
     sendMessageBox.addEventListener('keypress', function (e) {
