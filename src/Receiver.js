@@ -25,20 +25,6 @@ function main() {
 
     var contentMap = {};
 
-
-    //test pizz
-    // var sound = new Pizzicato.Sound({ 
-    //     source: 'file',
-    //     options: { path: 'https://danbleton.nyc3.digitaloceanspaces.com/assets/SingingIce.mp3' }
-    // });
-
-
-    // const sound = new Pizzicato.Sound('https://danbleton.nyc3.digitaloceanspaces.com/assets/SingingIce.mp3', () => {
-    //     sound.play();
-    //   });
-
-
-
     /**
      * Create the Peer object for our end of the connection.
      *
@@ -116,6 +102,73 @@ function main() {
     };
 
 
+    function LoadSound(id, params) {
+
+        console.log("creating new audio at: " + params.src);
+
+        let track = new Pizzicato.Sound({
+            source: 'file',
+            options: {
+                path: params.src
+            }
+        }, function () {
+
+            var stereoPanner = new Pizzicato.Effects.StereoPanner({
+                pan: parseFloat(params.pan)
+            });
+
+            var reverb = new Pizzicato.Effects.Reverb({
+                time: parseFloat(params.reverb),
+                decay: 0.2,
+                reverse: false,
+                mix: 0.5
+            });
+
+            console.log('sound file loaded!');
+            track.addEffect(stereoPanner);
+            track.addEffect(reverb);
+            track.volume = parseFloat(params.volume);
+            track.loop = parseFloat(params.loop) < 0.5 ? false : true;
+            track.attack = parseFloat(params.fade_in);
+            track.release = parseFloat(params.fade_out);
+
+            contentMap[id] = params;
+            contentMap[id].media = track;
+            contentMap[id].effects[0] = stereoPanner;
+            contentMap[id].effects[1] = reverb;
+            contentMap[id].content_state = "ready";
+
+            //track stop
+            contentMap[id].media.on("stop", function () {
+                contentMap[id].content_state = "default";
+            });
+
+            //handle special case where sound needs to load and then play 
+            if (params.ui_state === "selected") {
+                contentMap[id].media.play();
+                contentMap[id].content_state = "playing";
+            }
+        });
+    }
+
+
+    function UpdateSound(id, params) {
+
+        contentMap[id].media.volume = parseFloat(params.volume);
+        contentMap[id].media.attack = parseFloat(params.fade_in);
+        contentMap[id].media.release = parseFloat(params.fade_out);
+        contentMap[id].effects[0].pan = parseFloat(params.pan);
+        contentMap[id].effects[1].time = parseFloat(params.reverb);
+        contentMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
+
+        if (contentMap[id].content_state !== "playing") {
+            contentMap[id].media.play();
+            contentMap[id].content_state = "playing";
+        }
+
+    }
+
+
 
     /**
      * Triggered once a connection has been achieved.
@@ -126,147 +179,131 @@ function main() {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
-            console.log("incoming map...");
-            console.log(data);
+            //cues come with a type
+            const cueType = data.type;
+            const body = data.body;
 
-            console.log("current map...");
-            console.log(contentMap);
+            if (cueType === "master-volume") {
+                Pizzicato.volume = parseFloat(data.body["volume"]);
+            }
 
-            for (const id in data) {
-
-                const params = data[id];
+            if (cueType === "play-once") {
+                const id = data.body.id;
+                const params = data.body[id];
 
                 if (params.type === "audio") {
 
-                    if (!contentMap[id] || params.src != contentMap[id].src) {
-                        console.log("creating new audio at: " + params.src);
 
-                        let track = new Pizzicato.Sound({
-                            source: 'file',
-                            options: {
-                                path: params.src
+
+                }
+            }
+
+            if (cueType === "soundstage") {
+                for (const id in body) {
+
+                    const params = body[id];
+
+                    //handle deleted cue
+                    if (params.src == "" && contentMap[id]) {
+                        if (contentMap[id].type === "audio") {
+                            if (contentMap[id].media) {
+                                contentMap[id].media.stop();
                             }
-                        }, function () {
+                        }
 
-                            var stereoPanner = new Pizzicato.Effects.StereoPanner({
-                                pan: parseFloat(params.pan)
-                            });
-
-                            var reverb = new Pizzicato.Effects.Reverb({
-                                time: parseFloat(params.reverb),
-                                decay: 0.2,
-                                reverse: false,
-                                mix: 0.5
-                            });
-
-                            console.log('sound file loaded!');
-                            track.addEffect(stereoPanner);
-                            track.addEffect(reverb);
-                            track.volume = parseFloat(params.volume);
-                            track.loop = parseFloat(params.loop) < 0.5 ? false : true;
-
-                            contentMap[id] = params;
-
-                            contentMap[id].media = track;
-
-                            contentMap[id].effects[0] = stereoPanner;
-                            contentMap[id].effects[1] = reverb;
-                            contentMap[id].content_state = "ready";
-
-                            //handle special case where sound needs to load and then play 
-                            if (params.ui_state === "selected") {
-                                contentMap[id].media.play();
-                            }
-                        });
-
-                    }
-
-                    else if (params.ui_state === "selected") {
-                        contentMap[id].media.stop();
-                        contentMap[id].media.volume = parseFloat(params.volume);
-                        contentMap[id].effects[0].pan = parseFloat(params.pan);
-                        contentMap[id].effects[1].time = parseFloat(params.reverb);
-                        contentMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
-                        contentMap[id].media.play();
-                    }
-
-                    else if (params.ui_state === "ready") {
-                        contentMap[id].media.stop();
-                    }
-
-                    else if (params.ui_state === "empty") {
                         contentMap[id] = params;
                     }
 
-                }
+                    if (params.type === "audio") {
 
-                if (params.type === "image") {
-                    // console.log(data[id]);
-                    // playerContent.style.backgroundImage = 'url(' + params.src + ')';
-                    if (params.ui_state === "selected") {
                         if (!contentMap[id] || params.src != contentMap[id].src) {
-                            console.log("creating new video at: " + params.src);
+                            LoadSound(id, params);
+                        }
 
+                        else if (params.ui_state === "selected") {
+                            // contentMap[id].media.stop();
+                            UpdateSound(id, params)
+
+                        }
+
+                        else if (params.ui_state === "ready") {
+                            contentMap[id].media.stop();
+                        }
+
+                        else if (params.ui_state === "empty") {
+                            contentMap[id] = params;
+                        }
+
+                    }
+
+                    if (params.type === "image") {
+                        // console.log(data[id]);
+                        // playerContent.style.backgroundImage = 'url(' + params.src + ')';
+                        if (params.ui_state === "selected") {
+                            if (!contentMap[id] || params.src != contentMap[id].src) {
+                                console.log("creating new video at: " + params.src);
+
+                                var videoCue = document.getElementById("video-cue");
+
+                                if (videoCue) {
+                                    playerContent.removeChild(videoCue);
+                                }
+
+                                videoCue = document.createElement("img");
+                                videoCue.className = "videoCue";
+                                videoCue.src = params.src;
+                                // videoCue.autoplay = true;
+                                videoCue.id = "video-cue";
+
+                                playerContent.appendChild(videoCue);
+
+                                contentMap[id] = params;
+                            }
+                        }
+                        else if (params.ui_state === "empty") {
                             var videoCue = document.getElementById("video-cue");
 
                             if (videoCue) {
                                 playerContent.removeChild(videoCue);
                             }
 
-                            videoCue = document.createElement("img");
-                            videoCue.className = "videoCue";
-                            videoCue.src = params.src;
-                            // videoCue.autoplay = true;
-                            videoCue.id = "video-cue";
-
-                            playerContent.appendChild(videoCue);
-
-                            contentMap[id] = params;
+                            contentMap[id] = null;
                         }
                     }
-                    else if(params.ui_state === "empty") {
-                        var videoCue = document.getElementById("video-cue");
 
-                        if (videoCue) {
-                            playerContent.removeChild(videoCue);
+                    if (params.type === "video") {
+
+                        if (params.ui_state === "selected") {
+                            if (!contentMap[id] || params.src != contentMap[id].src) {
+                                console.log("creating new video at: " + params.src);
+
+                                var videoCue = document.getElementById("video-cue");
+
+                                if (videoCue) {
+                                    playerContent.removeChild(videoCue);
+                                }
+
+                                videoCue = document.createElement("video");
+                                videoCue.className = "videoCue";
+                                videoCue.src = params.src;
+                                videoCue.autoplay = true;
+                                videoCue.id = "video-cue";
+
+                                playerContent.appendChild(videoCue);
+
+                                contentMap[id] = params;
+                            }
                         }
 
-                        contentMap[id] = null;
-                    }
-                }
-
-                if (params.type === "video") {
-
-                    if (params.ui_state === "selected") {
-                        if (!contentMap[id] || params.src != contentMap[id].src) {
-                            console.log("creating new video at: " + params.src);
-
+                        else if (params.ui_state === "empty") {
                             var videoCue = document.getElementById("video-cue");
 
                             if (videoCue) {
                                 playerContent.removeChild(videoCue);
                             }
 
-                            videoCue = document.createElement("video");
-                            videoCue.className = "videoCue";
-                            videoCue.src = params.src;
-                            videoCue.autoplay = true;
-                            videoCue.id = "video-cue";
-
-                            playerContent.appendChild(videoCue);
-
-                            contentMap[id] = params;
+                            contentMap[id] = null;
                         }
-                    }
-
-                    else if(params.ui_state === "empty") {
-                        var videoCue = document.getElementById("video-cue");
-
-                        if (videoCue) {
-                            playerContent.removeChild(videoCue);
-                        }
-
-                        contentMap[id] = null;
                     }
                 }
             }
@@ -309,93 +346,6 @@ function main() {
         conn.on('close', function () {
             status.innerHTML = "Connection closed";
         });
-    };
-
-    function clearContent() {
-
-        playerContent.style.backgroundImage = '';
-        playerContent.style.background = 'black';
-
-        //how to remove map?
-
-        // if(mapInstance )
-        // {
-        //     mapInstance.remove();
-        //     mapInstance = null;
-        // }
-    }
-
-    function audioOneState() {
-
-        clearContent();
-
-        // audioOne.play();
-        playerContent.style.background = 'green';
-
-        return;
-    };
-
-    function audioTwoState() {
-
-        clearContent();
-
-        // audioTwo.play();
-        playerContent.style.background = 'blue';
-
-
-        return;
-    };
-
-    function imageOneState() {
-
-        clearContent();
-
-        playerContent.style.background = 'yellow';
-        // playerContent.style.backgroundImage = 'url(assets/image/winter-scene.jpeg)';
-        // playerContent.style.objectFit = 'scale';
-        return;
-    }
-
-    function mapOneState() {
-
-        clearContent();
-
-        playerContent.style.background = 'orange';
-
-        // var w = 33000;
-        // var h = 33000;
-        // var mapMinZoom = 2;
-        // var mapMaxZoom = 7;
-        // mapInstance = L.map('playerContent', {
-        //   maxZoom: mapMaxZoom,
-        //   minZoom: mapMinZoom,
-        //   crs: L.CRS.Simple,
-        //   zoomControl: true,
-        //   wheelPxPerZoomLevel: 250,
-        //   attributionControl: false,
-        //   detectRetina: true
-        // });
-
-        // var _mapBounds = new L.LatLngBounds(
-        //     mapInstance.unproject([0, h], mapMaxZoom),
-        //   mapInstance.unproject([w, 0], mapMaxZoom));
-        //   mapInstance.setMaxBounds(_mapBounds);
-
-        // var _mapCenter = mapInstance.unproject([w / 2, h / 2], mapMaxZoom);
-        // mapInstance.setView(_mapCenter, 2);
-
-        // var _tileLayer = L.tileLayer(
-        //   'assets/iwd-tiles-sq/{z}/{x}/{y}.png', {
-        //   minZoom: mapMinZoom, maxZoom: mapMaxZoom,
-        //   bounds: _mapBounds,
-        //   continuousWorld: false,
-        //   noWrap: true,
-        //   tileSize: 250,
-        //   crs: L.CRS.Simple,
-        //   detectRetina: true
-        // }).addTo(mapInstance);
-
-        return;
     };
 
     function addMessage(msg) {

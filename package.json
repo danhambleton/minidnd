@@ -17,6 +17,7 @@
   },
   "homepage": "danbleton.com",
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.3",
     "aws-sdk": "^2.864.0",
     "dotenv": "^8.2.0",
     "file-system": "^2.2.2",
