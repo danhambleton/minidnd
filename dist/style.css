@@ -148,7 +148,7 @@ img {
 
     .cueElementSelected {
         border-radius: 25px;
-        border: 2px solid #50f8dca4;
+        border: 5px solid #50f8dca4;
         /* margin: 5px; */
         background: #50f8dca4;
         padding: 20px;
