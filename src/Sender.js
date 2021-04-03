@@ -708,6 +708,8 @@ function main() {
                     b.className = "cueElementEmpty";
                 }
 
+                stagedContent[id].ui_state = "ready";
+
             }
         }
         
