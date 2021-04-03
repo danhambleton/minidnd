@@ -21,6 +21,7 @@ function main() {
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
     var playContentButton = document.getElementById("playContent");
+    var stopContentButton = document.getElementById("stopContent");
     var masterVolumeSlider = document.getElementById("master-volume");
     var masterVolumeLabel= document.getElementById("volume-label");
     // var connectButton = document.getElementById("connect-button");
@@ -147,7 +148,7 @@ function main() {
         let files = dataTransfer.files;
         let asset = files[0];
 
-        var id = event.srcElement.id;
+        let id = event.srcElement.id;
 
         // Add a file to a Space
         var params = {
@@ -163,8 +164,10 @@ function main() {
             if (err) console.log(err, err.stack);
             else {
                 console.log(data);
-                event.srcElement.className = "cueElementReady";
-                event.srcElement.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
+
+                var b = document.getElementById(id);
+                b.className = "cueElementReady";
+                b.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
 
                 //set up audio for this element
 
@@ -189,7 +192,7 @@ function main() {
                 stagedContent[id] = contentParams;
 
                 if (contentParams.type === "image") {
-                    event.srcElement.style.backgroundImage = 'url(' + contentParams.src + ')';
+                    b.style.backgroundImage = 'url(' + contentParams.src + ')';
                 }
 
                 SaveWorkspace(JSON.stringify(stagedContent));
@@ -464,16 +467,20 @@ function main() {
 
         for (var i = 0; i < process.env.MAX_SLOTS; i++) {
 
-            var id = "cb_" + i.toString().padStart(2, '0');
+            let id = "cb_" + i.toString().padStart(2, '0');
             if (stagedContent[id]) {
                 var b = document.getElementById(id);
 
                 if (b) {
-                    b.className = "cueElementReady";
+                    b.className = "cueElementEmpty";
                     b.innerHTML = "<h2>" + getShortName(stagedContent[id].src) + "</h2>";
 
                     if (stagedContent[id].ui_state === "selected") {
                         b.className = "cueElementSelected";
+                    }
+
+                    if (stagedContent[id].ui_state === "ready") {
+                        b.className = "cueElementReady";
                     }
 
                     if (stagedContent[id].type === "image") {
@@ -663,6 +670,38 @@ function main() {
 
     playContentButton.addEventListener('click', function () {
 
+        //send staged content to all connected peers
+        for (const c of conn) {
+
+            if (c && c.open) {
+
+                var cue = {
+                    type: "soundstage",
+                    body: stagedContent
+                }
+
+                c.send(cue);
+            } else {
+                console.log('Connection is closed');
+            }
+        }
+
+    });
+
+    stopContentButton.addEventListener('click', function () {
+
+        //deselect all content
+        for(const id in stagedContent)
+        {
+            stagedContent[id].ui_state = "ready";
+            
+            var b = document.getElementById(id);
+            if(b)
+            {
+                b.className = "cueElementReady";
+            }
+        }
+        
         //send staged content to all connected peers
         for (const c of conn) {
 
