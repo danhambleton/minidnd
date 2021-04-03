@@ -28,15 +28,14 @@
 
                 <!-- <input type="text" id="receiver-id" title="Input the ID from receive.html">
                 <button id="connect-button">Connect</button> -->
-
-                <input type="text" id="sendMessageBox" placeholder="Enter a message..." autofocus="true" />
-                <button type="button" id="sendButton">Send</button>
-                <button type="button" id="clearMsgsButton">Clear Msgs</button>
-
-                <button type="button" id="playContent">Play Content</button>
-                <div style="font-weight: bold;" id="volume-label">Vol: </div>
-                <input type="range" min="0.0" max="1.0" value="1.0" step="0.01" id="master-volume" />
-                
+                <span id="toolbar" style="display: inline-block; min-width: 100%;">
+                    <input type="text" id="sendMessageBox" placeholder="Enter a message..." autofocus="true" />
+                    <button type="button" id="sendButton">Send</button>
+                    <button type="button" id="clearMsgsButton">Clear Msgs</button>
+                    <button type="button" id="playContent">Play Content</button>
+                    <div style="font-weight: bold; display: inline;" id="volume-label">Vol: </div>
+                    <input type="range" min="0.0" max="1.0" value="1.0" step="0.01" style="display: inline;" id="master-volume" />
+                </span>
                 
                 <div id="status" class="status"></div>
                 <div class="message" id="message"></div>
