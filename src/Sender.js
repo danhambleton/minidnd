@@ -21,7 +21,7 @@ function main() {
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
     var playContentButton = document.getElementById("playContent");
-    var saveContentButton = document.getElementById("saveContent");
+    var saveContentButton = document.getElementById("saveWorkspace");
     var stopContentButton = document.getElementById("stopContent");
     var masterVolumeSlider = document.getElementById("master-volume");
     var masterVolumeLabel= document.getElementById("volume-label");
