@@ -181,6 +181,7 @@ function main() {
                     pan: 0.0,
                     loop: 0,
                     reverb: 0,
+                    echo: 0,
                     fade_in: 1.0,
                     fade_out: 1.0
                 }
@@ -297,6 +298,25 @@ function main() {
             reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
         }
 
+        ///ECHO
+        var echoLabel = document.createElement('h3');
+        disp.appendChild(echoLabel);
+        var echoSlider = document.createElement("input");
+        echoSlider.type = "range";
+        echoSlider.min = 0.0;
+        echoSlider.max = 1.0;
+        echoSlider.step = 0.1;
+        echoSlider.value = stagedContent[id].echo;
+        disp.appendChild(echoSlider);
+        echoLabel.innerHTML = "Echo: " + echoSlider.value;
+
+        // Update the current slider value (each time you drag the slider handle)
+        echoSlider.oninput = function () {
+            stagedContent[id].echo = this.value;
+            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
+            echoLabel.innerHTML = "Echo: " + echoSlider.value;
+        }
+
         ///FADE IN
         var fadeInLabel = document.createElement('h3');
         disp.appendChild(fadeInLabel);
@@ -306,13 +326,13 @@ function main() {
         fadeInSlider.min = 0.0;
         fadeInSlider.max = 5.0;
         fadeInSlider.step = 0.1;
-        fadeInSlider.value = stagedContent[id].fadeIn;
+        fadeInSlider.value = stagedContent[id].fade_in;
         disp.appendChild(fadeInSlider);
         fadeInLabel.innerHTML = "Fade In: " + fadeInSlider.value;
 
         // Update the current slider value (each time you drag the slider handle)
         fadeInSlider.oninput = function () {
-            stagedContent[id].fadeIn = this.value;
+            stagedContent[id].fade_in = this.value;
             // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
             fadeInLabel.innerHTML = "Fade In: " + fadeInSlider.value;
         }
@@ -324,15 +344,15 @@ function main() {
         var fadeOutSlider = document.createElement("input");
         fadeOutSlider.type = "range";
         fadeOutSlider.min = 0.0;
-        fadeOutSlider.max = 1.0;
+        fadeOutSlider.max = 5.0;
         fadeOutSlider.step = 0.1;
-        fadeOutSlider.value = stagedContent[id].fadeOut;
+        fadeOutSlider.value = stagedContent[id].fade_out;
         disp.appendChild(fadeOutSlider);
         fadeOutLabel.innerHTML = "Fade Out: " + fadeOutSlider.value;
 
         // Update the current slider value (each time you drag the slider handle)
         fadeOutSlider.oninput = function () {
-            stagedContent[id].fadeOut = this.value;
+            stagedContent[id].fade_out = this.value;
             // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
             fadeOutLabel.innerHTML = "Fade Out: " + fadeOutSlider.value;
         }
@@ -368,8 +388,9 @@ function main() {
                 pan: 0.0,
                 loop: 0,
                 reverb: 0,
-                fade_in: 1.0,
-                fade_out: 1.0
+                echo: 0,
+                fade_in: 0.0,
+                fade_out: 0.0
             }
 
             var cueButton = document.getElementById(id);
@@ -393,7 +414,7 @@ function main() {
 
     function BuildContentGrid() {
         var stagingArea = document.getElementById("contentGrid");
-        for (var i = 0; i < 16; i++) {
+        for (var i = 0; i < process.env.MAX_SLOTS; i++) {
             var b = document.createElement("button");
             b.className = "cueElementEmpty";
             b.id = "cb_" + i.toString().padStart(2, '0');
@@ -408,8 +429,9 @@ function main() {
                 pan: 0.0,
                 loop: 0,
                 reverb: 0,
-                fade_in: 1.0,
-                fade_out: 1.0
+                echo: 0,
+                fade_in: 0.0,
+                fade_out: 0.0
             }
             stagingArea.appendChild(b);
 
@@ -440,7 +462,7 @@ function main() {
     //Load grid contents from manifest
     function LoadContentGrid() {
 
-        for (var i = 0; i < 16; i++) {
+        for (var i = 0; i < process.env.MAX_SLOTS; i++) {
 
             var id = "cb_" + i.toString().padStart(2, '0');
             if (stagedContent[id]) {

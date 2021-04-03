@@ -124,9 +124,16 @@ function main() {
                 mix: 0.5
             });
 
+            var pingPongDelay = new Pizzicato.Effects.PingPongDelay({
+                feedback: 0.3,
+                time: 0.5,
+                mix: parseFloat(params.echo)
+            });
+
             console.log('sound file loaded!');
             track.addEffect(stereoPanner);
             track.addEffect(reverb);
+            track.addEffect(pingPongDelay);
             track.volume = parseFloat(params.volume);
             track.loop = parseFloat(params.loop) < 0.5 ? false : true;
             track.attack = parseFloat(params.fade_in);
@@ -136,6 +143,7 @@ function main() {
             contentMap[id].media = track;
             contentMap[id].effects[0] = stereoPanner;
             contentMap[id].effects[1] = reverb;
+            contentMap[id].effects[2] = pingPongDelay;
             contentMap[id].content_state = "ready";
 
             //track stop
@@ -159,6 +167,7 @@ function main() {
         contentMap[id].media.release = parseFloat(params.fade_out);
         contentMap[id].effects[0].pan = parseFloat(params.pan);
         contentMap[id].effects[1].time = parseFloat(params.reverb);
+        contentMap[id].effects[2].mix = parseFloat(params.echo);
         contentMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
 
         if (contentMap[id].content_state !== "playing") {

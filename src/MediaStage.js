@@ -1,4 +1,5 @@
 
+
 import * as Pizzicato from "pizzicato"
 import aws from "aws-sdk"
 import { nanoid } from 'nanoid'
@@ -22,7 +23,7 @@ class MediaStage {
         });
 
         //init content map
-        for (var i = 0; i < 16; i++) {
+        for (var i = 0; i < process.env.MAX_SLOTS; i++) {
             var id = "cb_" + i.toString().padStart(2, '0');
             var params = this.GetDefaultParams();
             stagedContent[id] = params;
@@ -226,9 +227,10 @@ class MediaStage {
     }
 
     PlayActive() {
-        
+
         for (const id in stagedContent) {
             if (stagedContent[id].state === "active") {
+
                 if (stagedContent[id].type === "audio") {
 
                     if(stagedContent[id].state === "ready")
