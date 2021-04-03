@@ -693,12 +693,21 @@ function main() {
         //deselect all content
         for(const id in stagedContent)
         {
-            stagedContent[id].ui_state = "ready";
+            
             
             var b = document.getElementById(id);
             if(b)
             {
-                b.className = "cueElementReady";
+                if(stagedContent[id].ui_state === "ready" || stagedContent[id].ui_state === "selected")
+                {
+                    b.className = "cueElementReady";
+                }
+
+                else
+                {
+                    b.className = "cueElementEmpty";
+                }
+
             }
         }
         
