@@ -21,6 +21,7 @@ function main() {
     var sendButton = document.getElementById("sendButton");
     var clearMsgsButton = document.getElementById("clearMsgsButton");
     var playContentButton = document.getElementById("playContent");
+    var saveContentButton = document.getElementById("saveContent");
     var stopContentButton = document.getElementById("stopContent");
     var masterVolumeSlider = document.getElementById("master-volume");
     var masterVolumeLabel= document.getElementById("volume-label");
@@ -667,6 +668,12 @@ function main() {
     clearMsgsButton.addEventListener('click', clearMessages);
     // Start peer connection on click
     // connectButton.addEventListener('click', join);
+
+    saveContentButton.addEventListener('click', function () {
+
+        SaveWorkspace(JSON.stringify(stagedContent));
+
+    });
 
     playContentButton.addEventListener('click', function () {
 
