@@ -1,5 +1,6 @@
 import aws from "aws-sdk"
 import * as THREE from "three";
+import * as MapShaders from "./MapShaders.js";
 
 class Map {
 
@@ -28,28 +29,69 @@ class Map {
         renderer.setSize( container.offsetWidth, container.offsetHeight );
         container.appendChild( renderer.domElement );
 
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-        const cube = new THREE.Mesh( geometry, material );
-        scene.add( cube );
+        // instantiate a loader
+        const loader = new THREE.TextureLoader();
 
-        camera.position.z = 5;
+        // load a resource
+        loader.load(
+            // resource URL
+            'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/sunblight-keep.png',
 
-        const animate = function () {
-            requestAnimationFrame( animate );
+            // onLoad callback
+            function ( texture ) {
+                // // in this example we create the material when the texture is loaded
+                // const material = new THREE.MeshBasicMaterial( {
+                //     map: texture
+                // } );
 
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
+                // const geometry = new THREE.BoxGeometry();
+                // const cube = new THREE.Mesh( geometry, material );
+                // scene.add( cube );
+        
+                // camera.position.z = 5;
 
-            renderer.render( scene, camera );
-        };
+                var quad = new THREE.Mesh(
+                    new THREE.PlaneGeometry(2, 2),
+                    new THREE.ShaderMaterial({
+                      vertexShader: MapShaders.buildMapVertexShader(),
+                      fragmentShader: MapShaders.buildMapFragmentShader(),
+                      depthWrite: false,
+                      depthTest: false,
+                      uniforms: {
+                        baseMap: { type: "t", value: texture }
+                      },
+                    })
+                  );
+                  scene.add(quad);
 
-        animate();
+                function animate() {
+                    
+                    requestAnimationFrame( animate );
+
+                    // cube.rotation.x += 0.005;
+                    // cube.rotation.y += 0.01;
+            
+                    renderer.render( scene, camera );
+            
+                }
+
+                animate();
+        
+            },
+
+            // onProgress callback currently not supported
+            undefined,
+
+            // onError callback
+            function ( err ) {
+                console.error( 'An error happened.' );
+            }
+        );
+
+ 
 
 
     }
-
-
 
     async LoadFromServer(path, callback) {
         // Add a file to a Space
