@@ -2,6 +2,7 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 // import { Howl, Howler } from 'howler'
 import * as Pizzicato from "pizzicato"
+import { Map } from "./Map.js"
 
 main();
 
@@ -24,6 +25,9 @@ function main() {
     var playerContent = document.getElementById("playerContent");
 
     var contentMap = {};
+
+
+    var myMap = new Map(playerContent);
 
     /**
      * Create the Peer object for our end of the connection.
