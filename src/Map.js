@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
 import * as MapShaders from "./MapShaders.js";
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from "postprocessing";
 
 class Map {
 
@@ -32,11 +33,87 @@ class Map {
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, screenDims.x / screenDims.y, 0.1, 100);
 
-        console.log(container.offsetWidth);
-
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(screenDims.x, screenDims.y);
         container.appendChild(renderer.domElement);
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onMouseMove(event) {
+
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+
+            // mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+            // mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+            mouse.x = ((event.clientX - renderer.domElement.offsetLeft) / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = - ((event.clientY - renderer.domElement.offsetTop) / renderer.domElement.clientHeight) * 2 + 1;
+
+            // update the picking ray with the camera and mouse position
+            raycaster.setFromCamera(mouse, camera);
+
+            //console.log(mouse);
+
+            // calculate objects intersecting the picking ray
+            const intersects = raycaster.intersectObjects(scene.children);
+
+            if (intersects.length > 0) {
+                for (let i = 0; i < intersects.length; i++) {
+
+                    //intersects[ i ].object.material.color.set( 0xff0000 );
+                    console.log(intersects[i].point);
+
+                }
+            }
+
+            // const listener = new THREE.AudioListener();
+            // camera.add(listener);
+
+            // // create a global audio source
+            // const sound = new THREE.Audio(listener);
+
+            // // load a sound and set it as the Audio object's buffer
+            // const audioLoader = new THREE.AudioLoader();
+            // audioLoader.load('https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/SingingIce.mp3', function (buffer) {
+            //     sound.setBuffer(buffer);
+            //     sound.setLoop(true);
+            //     sound.setVolume(0.5);
+
+
+
+            //     const reverbLoader = new THREE.AudioLoader();
+
+
+
+            //     // load impulse response from file
+            //     reverbLoader.load("https://danbleton.nyc3.digitaloceanspaces.com/public/reverbs/Large%20Wide%20Echo%20Hall.wav", function (buffer) {
+
+            //         let convolver = listener.context.createConvolver();
+
+            //         console.log("we have convolver...")
+
+            //         convolver.buffer = buffer;
+
+            //         listener.setFilter(convolver);
+
+
+            //         var stereoPanner = listener.context.createStereoPanner();
+
+            //         stereoPanner.pan.setValueAtTime(-0.75, listener.context.currentTime);
+
+            //         listener.setFilter(stereoPanner);
+
+
+            //         sound.play();
+
+            //     });
+
+            // });
+        }
+
+        container.addEventListener('mousedown', onMouseMove, false);
 
         // instantiate a loader
         const loader = new THREE.TextureLoader();
@@ -140,16 +217,26 @@ class Map {
 
                 //container.appendChild(gui.domElement);
 
+                // const composer = new EffectComposer(renderer);
+                // composer.addPass(new RenderPass(scene, camera));
+                // composer.addPass(new EffectPass(camera, new BloomEffect()));
+
+                // const clock = new THREE.Clock();
+
+                // create an AudioListener and add it to the camera
+
+
                 function animate() {
 
                     requestAnimationFrame(animate);
 
-                    // cube.rotation.x += 0.005;
-                    // cube.rotation.y += 0.01;
-
                     controls.update();
 
+
+
+
                     renderer.render(scene, camera);
+                    // composer.render(clock.getDelta());
 
                 }
 
