@@ -1,12 +1,10 @@
 varying vec2 vUv;
 
-uniform float u_image_scale;
 uniform float u_grid_scale;
-uniform vec2 u_origin;
+uniform float u_grid_alpha;
 uniform vec2 u_image_dims;
-uniform vec2 u_screen_dims;
 
-uniform sampler2D baseMap;
+// uniform sampler2D baseMap;
 
 #extension GL_OES_standard_derivatives : enable
 
@@ -15,9 +13,9 @@ uniform sampler2D baseMap;
 // Helper vector. If you're doing anything that involves regular triangles or hexagons, the
 // 30-60-90 triangle will be involved in some way, which has sides of 1, sqrt(3) and 2.
 #ifdef FLAT_TOP_HEXAGON
-  vec2 s = vec2(1.7320508, 1.0);
+vec2 s = vec2(1.7320508, 1.0);
 #else
-  vec2 s = vec2(1.0, 1.7320508);
+vec2 s = vec2(1.0, 1.7320508);
 #endif
 
 float hash21(vec2 p) {
@@ -86,35 +84,35 @@ void main() {
     // be the value of the 2D isofield for a hexagon.
   float eDist = hex(h.xy); // Edge distance.
 
-  float u_contour_spacing = u_image_scale * 2.0;
-    float u_contour_width = 0.15;
+  float u_contour_spacing = 0.75 * 2.0;
+  float u_contour_width = 0.15;
 
-    const vec4 col_contour = vec4(0.9, 0.9, 0.9, 0.9);
-    const vec4 col_outside = vec4(0.1, 0.1, 0.1, 1.0);
-    const vec4 col_inside = vec4(0.6, 0.6, 0.6, 1.0);
+  const vec4 col_contour = vec4(0.9, 0.9, 0.9, 0.9);
+  const vec4 col_outside = vec4(0.1, 0.1, 0.1, 1.0);
+  const vec4 col_inside = vec4(0.6, 0.6, 0.6, 1.0);
 
-    vec4 col = mix(col_inside, col_outside, step(0.0, eDist));
-    float dist_change = fwidth(eDist) * 0.5;
+  vec4 col = mix(col_inside, col_outside, step(0.0, eDist));
+  float dist_change = fwidth(eDist) * 0.5;
 
     // Major contour lines
-    {
-        float spacing = u_contour_spacing;
-        float width = u_contour_width;
+  {
+    float spacing = u_contour_spacing;
+    float width = u_contour_width;
 
-        float t = abs(fract(eDist / spacing + 0.5) - 0.5) * spacing;
-        t = smoothstep(width - dist_change, width + dist_change, t);
-        col = mix(col_contour, col, t);
-    }
+    float t = abs(fract(eDist / spacing + 0.5) - 0.5) * spacing;
+    t = smoothstep(width - dist_change, width + dist_change, t);
+    col = mix(col_contour, col, t);
+  }
 
     // Minor contour lines
-    {
-        float spacing = u_contour_spacing * 0.25;
-        float width = u_contour_width * 0.25;
+  {
+    float spacing = u_contour_spacing * 0.25;
+    float width = u_contour_width * 0.25;
 
-        float t = abs(fract(eDist / spacing + 0.5) - 0.5) * spacing;
-        t = smoothstep(width - dist_change, width + dist_change, t);
-        col = mix(col_contour, col, t);
-    }
+    float t = abs(fract(eDist / spacing + 0.5) - 0.5) * spacing;
+    t = smoothstep(width - dist_change, width + dist_change, t);
+    col = mix(col_contour, col, t);
+  }
 
     // Initiate the background to a white color, putting in some dark borders.
   // vec4 hexCol = mix(vec4(1., 1., 1., 0.), vec4(0., 0., 0., 1.), smoothstep(0., 0.022, eDist - .5 + .04)); 
@@ -125,8 +123,7 @@ void main() {
     // vec2 uv_remap = inv_scale * vUv + vec2(offset) + (u_origin - vec2(0.5));
 
     // vec4 mapCol = texture2D(baseMap, uv_remap );
-    
 
-  gl_FragColor = u_origin.x * col;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);
+  gl_FragColor = u_grid_alpha * col;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);
 
 }
