@@ -539,24 +539,6 @@ function main() {
                     addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
                     status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
 
-                    c.on('data', function (data) {
-
-                        console.log(data);
-
-                        if(data.type === "token")
-                        {
-                            for (const oc of conn) {
-
-                                if (oc && oc.open && oc !== c ) {
-
-                                    oc.send(data);
-                                } else {
-                                    console.log('Connection is closed');
-                                }
-                            }
-                        }
-
-                    });
 
                 }
                 else {
@@ -577,7 +559,26 @@ function main() {
 
             });
 
+            c.on('data', function (data) {
 
+                console.log(data);
+
+                if(data.type === "token")
+                {
+                    
+                    for (const oc of conn) {
+
+                        if (oc && oc.open && oc !== c ) {
+
+                            console.log("sending to: " + oc.peer)
+                            oc.send(data);
+                        } else {
+                            console.log('Connection is closed');
+                        }
+                    }
+                }
+
+            });
         });
         peer.on('disconnected', function () {
             status.innerHTML = "Connection lost. Please reconnect";
@@ -598,6 +599,29 @@ function main() {
             alert('' + err);
         });
     };
+
+    function ready()
+    {
+        // for (const c of conn) {
+        
+        //     c.on('data', function (data) {
+            
+        //         console.log(data);
+
+        //         if(data.type === "token")
+        //         {
+        //             for (const oc of conn) {
+
+        //                 if (oc && oc.open && oc !== c ) {
+        //                     oc.send(data);
+        //                 } else {
+        //                     console.log('Connection is closed');
+        //                 }
+        //             }
+        //         }
+        //     });
+        // }
+    }
 
     /**
      * Get first "GET style" parameter from href.

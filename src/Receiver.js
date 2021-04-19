@@ -4,6 +4,7 @@ import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
 import { NearestMipMapLinearFilter, TetrahedronGeometry } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MapControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
 import * as MapShaders from "./MapShaders.js";
 
@@ -35,6 +36,7 @@ function main() {
         gridOpacity: 0.75,
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
+        profileColor: Math.floor(Math.random()*16777215).toString(16),
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -136,7 +138,7 @@ function main() {
         // load a resource
         loader.load(
             // resource URL
-            'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/lost_city.jpeg',
+            'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
 
             // onLoad callback
             function (texture) {
@@ -157,6 +159,7 @@ function main() {
 
                 app.imageObj.name = "ImageObj";
                 app.imageObj.position.setZ(0.0);
+                app.imageObj.rotation.set(-Math.PI/2, 0.0, 0.0);
                 app.scene.add(app.imageObj);
 
                 app.scene.remove(app.scene.getObjectByName("GridObj"));
@@ -168,16 +171,20 @@ function main() {
                     new THREE.ShaderMaterial({
                         vertexShader: MapShaders.buildMapVertexShader(),
                         fragmentShader: MapShaders.buildMapFragmentShader(),
-                        blending: THREE.AdditiveBlending,
+                        blending: THREE.NormalBlending,
                         transparent: true,
                         uniforms: app.shaderUniforms
                     })
                 );
-                app.gridObj.position.set(0.0, 0.0, 0.001);
+                app.gridObj.position.set(0.0, 0.01, 0.0);
                 app.gridObj.name = "GridObj";
+                app.gridObj.rotation.set(-Math.PI/2, 0.0, 0.0);
                 app.scene.add(app.gridObj);
 
+                //recenter camera
+                app.camera.position.set(0, 2, 0);
 
+                app.renderer.render(app.scene, app.camera);
             },
 
             // onProgress callback currently not supported
@@ -236,6 +243,8 @@ function main() {
 
         var r = 0.3 / app.gridScale;
 
+        console.log(params);
+
         var paramsObj = JSON.parse(params);
 
         var np = new THREE.Vector3(
@@ -244,26 +253,33 @@ function main() {
             paramsObj.position.z
             );
 
-        var tokenObj = app.scene.getObjectByName(id);
+        var peerColor = new THREE.Color(
+            "#" + paramsObj.color
+        );
+
+        var tokenObj = app.scene.getObjectByName(paramsObj.peer);
 
         if (!tokenObj) {
-            console.log("creating token object");
+            console.log("creating token object: " + paramsObj.peer);
             //instantiate this peers object
             tokenObj = new THREE.Mesh(
                 new THREE.SphereGeometry(r, 32, 32),
                 new THREE.MeshBasicMaterial({
                     // map: texture
-                    color: 0xffff00
+                    color: peerColor
                 })
             );
-            tokenObj.name = id;
+            tokenObj.name = paramsObj.peer;
             tokenObj.position.set(np.x, np.y, np.z);
             app.scene.add(tokenObj);
         }
         else {
             //console.log("have token object");
+            console.log("updating token object: " + paramsObj.peer);
             tokenObj.position.set(np.x, np.y, np.z);
         }
+
+        app.renderer.render(app.scene, app.camera);
 
     }
 
@@ -318,7 +334,7 @@ function main() {
                             new THREE.SphereGeometry(r, 32, 32),
                             new THREE.MeshBasicMaterial({
                                 // map: texture
-                                color: 0xffff00
+                                color: new THREE.Color("#" + app.profileColor)
                             })
                         );
                         tokenObj.name = app.peerId;
@@ -335,7 +351,8 @@ function main() {
 
                         var tokenParams = {
                             peer: app.peer.id,
-                            position: np
+                            position: np,
+                            color: app.profileColor
                         }
 
                         var cue = {
@@ -429,23 +446,40 @@ function main() {
 
         //create threejs scene
         app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
-        app.gridScale = 1.0;
-        app.gridOpacity = 0.75;
+        app.gridScale = 5.0;
+        app.gridOpacity = 0.55;
         app.imageSize = new THREE.Vector2(1920, 1080);
 
         //init threejs
         app.scene = new THREE.Scene();
-        //app.camera = new THREE.PerspectiveCamera(75, app.clientSize.x / app.clientSize.y, 0.1, 100);
-        app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
+
+        const near = 2;
+        const far = 5;
+        const color = 'black';
+        app.scene.fog = new THREE.Fog(color, near, far);
+        app.scene.background = new THREE.Color(color);
+
+
+        app.camera = new THREE.PerspectiveCamera(75, app.clientSize.x / app.clientSize.y, 0.1, 100);
+        // app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
         app.renderer = new THREE.WebGLRenderer();
         app.renderer.setSize(app.clientSize.x, app.clientSize.y);
         app.playerContent.appendChild(app.renderer.domElement);
 
         //orbit controls
-        app.controls = new OrbitControls(app.camera, app.renderer.domElement);
+        app.controls = new MapControls(app.camera, app.renderer.domElement);
 
-        app.camera.position.set(0, 0, 2);
+        app.controls.enableDamping = true;
+        app.controls.dampingFactor = 0.05;
+        app.controls.screenSpacePanning = false;
+        app.controls.minDistance = 1.0;
+        app.controls.maxDistance = 10.0;
+        app.controls.maxPolarAngle = Math.PI / 4;
+
+        app.camera.position.set(0, 2, 0);
         app.camera.lookAt(0.0, 0.0, 0.0);
+
+
         app.controls.update();
 
         //image plane
@@ -463,12 +497,15 @@ function main() {
             })
         );
         app.imageObj.name = "ImageObj";
+        app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
         app.scene.add(app.imageObj);
 
 
         //hex grid plane
         app.debugParams = {
-            p_grid_scale: 100.0,
+            p_grid_scale: 5.0,
+            p_grid_alpha: 0.5,
+            p_grid_spacing: 0.47,
             p_image_scale: 1.0,
             p_origin_x: 0.5,
             p_origin_y: 0.5,
@@ -482,6 +519,7 @@ function main() {
             //baseMap: { type: "t", value: texture }, //fog texture??
             u_grid_scale: { value: app.gridScale },
             u_grid_alpha: { value: app.gridOpacity },
+            u_grid_spacing: { value: app.debugParams.p_grid_spacing },
             u_image_dims: { value: app.imageSize },
         }
 
@@ -490,67 +528,87 @@ function main() {
             new THREE.ShaderMaterial({
                 vertexShader: MapShaders.buildMapVertexShader(),
                 fragmentShader: MapShaders.buildMapFragmentShader(),
-                blending: THREE.AdditiveBlending,
+                blending: THREE.NormalBlending,
                 transparent: true,
                 uniforms: app.shaderUniforms
             })
         );
-        app.gridObj.position.set(0.0, 0.0, 0.001);
+        app.gridObj.position.set(0.0, 0.01, 0.0);
+        app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
         app.gridObj.name = "GridObj";
         app.scene.add(app.gridObj);
 
-        //add handler
-        app.playerContent.addEventListener("mousedown", function (event) {
+
+
+        function resizeRendererToDisplaySize() {
+            const canvas = app.renderer.domElement;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            const needResize = canvas.width !== width || canvas.height !== height;
+            if (needResize) {
+                app.renderer.setSize(width, height, false);
+            }
+            return needResize;
+          }
+        
+          function render() {
+            if (resizeRendererToDisplaySize()) {
+              const canvas = app.renderer.domElement;
+              app.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+              app.camera.updateProjectionMatrix();
+            }
+        
+            app.renderer.render(app.scene, app.camera);
+          }
+          render();
+        
+          app.controls.addEventListener('change', render);
+          window.addEventListener('resize', render);
+
+        //   const gui = new GUI()
+        //   const mapFolder = gui.addFolder("Map Controls")
+        //   mapFolder.add(app.debugParams, "p_grid_scale").min(0.001).max(20.0).step(0.001).onChange(function () {
+        //       app.shaderUniforms.u_grid_scale.value = app.debugParams.p_grid_scale;
+        //       app.renderer.render(app.scene, app.camera);
+        //   });
+        //   mapFolder.add(app.debugParams, "p_grid_alpha").min(0.0).max(2.0).step(0.001).onChange(function () {
+        //     app.shaderUniforms.u_grid_alpha.value = app.debugParams.p_grid_alpha;
+        //       app.renderer.render(app.scene, app.camera);
+        //   });
+        //   mapFolder.add(app.debugParams, "p_grid_spacing").min(0.0).max(2.0).step(0.001).onChange(function () {
+        //     app.shaderUniforms.u_grid_spacing.value = app.debugParams.p_grid_spacing;
+        //     app.renderer.render(app.scene, app.camera);
+        // });
+        //   mapFolder.open()
+
+                  //add handler
+        app.playerContent.addEventListener("dblclick", function (event) {
 
             console.log("in event");
-            LoadImage(null, null);
+            //LoadImage(null, null);
             PlaceToken(null, null, event);
             //LoadSound(null, null, event);
 
+            render();
+
         });
 
 
-        const gui = new GUI()
-        const mapFolder = gui.addFolder("Map Controls")
-
-        mapFolder.add(app.debugParams, "p_origin_x").min(-2.0).max(2.0).step(0.001).onChange(function () {
-
-            // var obj = app.scene.getObjectByName(app.peerId);
-            // if(obj)
-            // {
-            //     var x = obj.position.x;
-            //     obj.position.setX(x + app.debugParams.p_origin_x);
-            // }
-            // app.renderer.render(app.scene, app.camera);
-        });
-        mapFolder.add(app.debugParams, "p_origin_y").min(-2.0).max(2.0).step(0.001).onChange(function () {
-            // var obj = app.scene.getObjectByName(app.peerId);
-            // if(obj)
-            // {
-            //     var y = obj.position.y;
-            //     obj.position.setY(y + app.debugParams.p_origin_y);
-            // }
-            // app.renderer.render(app.scene, app.camera);
-        });
-
-
-
-        mapFolder.open()
-
+        LoadImage(null, null);
 
         //set up render loop
         //TODO: link app to user interaction
-        function animate() {
+        // function animate() {
 
-            requestAnimationFrame(animate);
+        //     requestAnimationFrame(animate);
 
-            app.controls.update();
+        //     app.controls.update();
 
-            app.renderer.render(app.scene, app.camera);
-            // composer.render(clock.getDelta());
-        }
+        //     app.renderer.render(app.scene, app.camera);
+        //     // composer.render(clock.getDelta());
+        // }
 
-        animate();
+        // animate();
 
     };
 

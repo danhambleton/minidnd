@@ -2,6 +2,7 @@ varying vec2 vUv;
 
 uniform float u_grid_scale;
 uniform float u_grid_alpha;
+uniform float u_grid_spacing;
 uniform vec2 u_image_dims;
 
 // uniform sampler2D baseMap;
@@ -109,12 +110,12 @@ void main() {
     // be the value of the 2D isofield for a hexagon.
   float eDist = hex(h.xy); // Edge distance.
 
-  float u_contour_spacing = 0.75 * 2.0;
+  float u_contour_spacing = u_grid_spacing * 2.0;
   float u_contour_width = 0.15;
 
   const vec4 col_contour = vec4(0.9, 0.9, 0.9, 0.9);
-  const vec4 col_outside = vec4(0.1, 0.1, 0.1, 1.0);
-  const vec4 col_inside = vec4(0.6, 0.6, 0.6, 1.0);
+  const vec4 col_outside = vec4(0.9, 0.9, 0.9, 1.0);
+  const vec4 col_inside = vec4(0.9, 0.9, 0.9, 1.0);
 
   vec4 col = mix(col_inside, col_outside, step(0.0, eDist));
   float dist_change = fwidth(eDist) * 0.5;
@@ -140,7 +141,7 @@ void main() {
   }
 
     // Initiate the background to a white color, putting in some dark borders.
-  vec4 hexCol = mix(vec4(1., 1., 1., 0.), vec4(0., 0., 0., 1.), smoothstep(0., 0.022, eDist - .5 + .04)); 
+   vec4 hexCol = mix(vec4(1., 1., 1., 0.), vec4(1., 1., 1., u_grid_alpha), smoothstep(0.9 * u_grid_spacing, 1.0 * u_grid_spacing, eDist)); 
 
     // float inv_scale = 1.0 / u_image_scale;
     // float offset = 0.5 * (1.0 - inv_scale);
@@ -149,6 +150,7 @@ void main() {
 
     // vec4 mapCol = texture2D(baseMap, uv_remap );
 
-  gl_FragColor = u_grid_alpha * hexCol;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);
+
+  gl_FragColor = hexCol;//vec4(eDist / u_grid_scale);//u_grid_alpha * hexCol;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);
 
 }
