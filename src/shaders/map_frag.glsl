@@ -51,22 +51,44 @@ vec4 getHex(vec2 p) {
     // center we'll eventually use will depend upon which is closest to the current point. Since 
     // the central hexagon point is unique, it doubles as the unique hexagon ID.
 
-    #ifdef FLAT_TOP_HEXAGON
-  vec4 hC = floor(vec4(p, p - vec2(1, .5)) / s.xyxy) + .5;
-    #else
-  vec4 hC = floor(vec4(p, p - vec2(.5, 1)) / s.xyxy) + .5;
-    #endif
+  //   #ifdef FLAT_TOP_HEXAGON
+  // vec4 hC = floor(vec4(p, p - vec2(1, .5)) / s.xyxy) + .5;
+  //   #else
+  // vec4 hC = floor(vec4(p, p - vec2(.5, 1)) / s.xyxy) + .5;
+  //   #endif
+
+  float hcx = floor(p.x / s.x) + 0.5;
+  float hcy = floor(p.y / s.y) + 0.5;
+  float hcz = floor((p.x - 0.5) / s.x) + 0.5;
+  float hcw = floor((p.y - 1.0) / s.y) + 0.5;
+
+  vec4 hC = vec4(hcx, hcy, hcz, hcw);
 
     // Centering the coordinates with the hexagon centers above.
-  vec4 h = vec4(p - hC.xy * s, p - (hC.zw + .5) * s);
+  //vec4 h = vec4(p - hC.xy * s, p - (hC.zw + .5) * s);
 
-    // Nearest hexagon center (with respect to p) to the current point. In other words, when
-    // "h.xy" is zero, we're at the center. We're also returning the corresponding hexagon ID -
-    // in the form of the hexagonal central point.
-    //
-    // On a side note, I sometimes compare hex distances, but I noticed that Iomateron compared
-    // the squared Euclidian version, which seems neater, so I've adopted that.
-  return dot(h.xy, h.xy) < dot(h.zw, h.zw) ? vec4(h.xy, hC.xy) : vec4(h.zw, hC.zw + .5);
+  float hx = p.x - hC.x * s.x;
+  float hy = p.y - hC.y * s.y;
+  float hz = p.x - (hC.z + 0.5) * s.x;
+  float hw = p.y - (hC.w + 0.5) * s.y;
+
+  vec4 h = vec4(hx, hy, hz, hw);
+
+  vec2 h1 = vec2(h.x, h.y);
+  vec2 h2 = vec2(h.z, h.w);
+
+  vec4 hex = vec4(0.0);
+  if(length(h1) < length(h2))
+  {
+    hex = vec4(h.x, h.y, hC.x, hC.y);
+  }
+  else
+  {
+    hex = vec4(h.z, h.w, hC.z + 0.5, hC.w + 0.5);
+  }
+
+
+  return hex;
 }
 
 void main() {
@@ -75,10 +97,13 @@ void main() {
   float screen_aspect = u_image_dims.y / u_image_dims.x;
   vec2 u = vec2(vUv.x, screen_aspect * vUv.y);
 
+  vec2 wu = vec2(-5.0 + 10.0 * vUv.x, screen_aspect * (-5.0 + 10.0 * vUv.y));
+
     // Scaling, translating, then converting it to a hexagonal grid cell coordinate and
     // a unique coordinate ID. The resultant vector contains everything you need to produce a
     // pretty pattern, so what you do from here is up to you.
-  vec4 h = getHex(u_grid_scale * u + s.yx / 2.);
+  //vec4 h = getHex(u_grid_scale * wu + s.yx / 2.);
+  vec4 h = getHex(u_grid_scale * wu);
 
     // The beauty of working with hexagonal centers is that the relative edge distance will simply 
     // be the value of the 2D isofield for a hexagon.
@@ -115,7 +140,7 @@ void main() {
   }
 
     // Initiate the background to a white color, putting in some dark borders.
-  // vec4 hexCol = mix(vec4(1., 1., 1., 0.), vec4(0., 0., 0., 1.), smoothstep(0., 0.022, eDist - .5 + .04)); 
+  vec4 hexCol = mix(vec4(1., 1., 1., 0.), vec4(0., 0., 0., 1.), smoothstep(0., 0.022, eDist - .5 + .04)); 
 
     // float inv_scale = 1.0 / u_image_scale;
     // float offset = 0.5 * (1.0 - inv_scale);
@@ -124,6 +149,6 @@ void main() {
 
     // vec4 mapCol = texture2D(baseMap, uv_remap );
 
-  gl_FragColor = u_grid_alpha * col;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);
+  gl_FragColor = u_grid_alpha * hexCol;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);
 
 }

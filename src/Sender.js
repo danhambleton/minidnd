@@ -539,6 +539,25 @@ function main() {
                     addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
                     status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
 
+                    c.on('data', function (data) {
+
+                        console.log(data);
+
+                        if(data.type === "token")
+                        {
+                            for (const oc of conn) {
+
+                                if (oc && oc.open && oc !== c ) {
+
+                                    oc.send(data);
+                                } else {
+                                    console.log('Connection is closed');
+                                }
+                            }
+                        }
+
+                    });
+
                 }
                 else {
                     c.send("Host has reached max number of peers. Disconnecting...");

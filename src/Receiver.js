@@ -2,6 +2,7 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
+import { NearestMipMapLinearFilter, TetrahedronGeometry } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
 import * as MapShaders from "./MapShaders.js";
@@ -141,20 +142,41 @@ function main() {
             function (texture) {
 
                 app.scene.remove(app.scene.getObjectByName("ImageObj"));
-                
+
                 app.imageSize = new THREE.Vector2(texture.image.width, texture.image.height);
                 var aspect = app.imageSize.y / app.imageSize.x;
 
                 app.imageObj = new THREE.Mesh(
                     new THREE.PlaneGeometry(10.0, aspect * 10.0),
                     new THREE.MeshBasicMaterial({
-                        map: texture
+                        map: texture,
+                        depthTest: true,
+                        depthWrite: true
                     })
                 );
+
                 app.imageObj.name = "ImageObj";
-                app.imageObj.position.setZ(-0.01);
+                app.imageObj.position.setZ(0.0);
                 app.scene.add(app.imageObj);
-                
+
+                app.scene.remove(app.scene.getObjectByName("GridObj"));
+
+                app.shaderUniforms.u_image_dims.value = app.imageSize;
+
+                app.gridObj = new THREE.Mesh(
+                    new THREE.PlaneGeometry(10.0, aspect * 10.0),
+                    new THREE.ShaderMaterial({
+                        vertexShader: MapShaders.buildMapVertexShader(),
+                        fragmentShader: MapShaders.buildMapFragmentShader(),
+                        blending: THREE.AdditiveBlending,
+                        transparent: true,
+                        uniforms: app.shaderUniforms
+                    })
+                );
+                app.gridObj.position.set(0.0, 0.0, 0.001);
+                app.gridObj.name = "GridObj";
+                app.scene.add(app.gridObj);
+
 
             },
 
@@ -168,14 +190,95 @@ function main() {
         );
     }
 
+    function getHex(p) {
+
+        var s = new THREE.Vector2(1.0, 1.7320508);
+
+        var aspect = app.imageSize.y / app.imageSize.x;
+        var uv = new THREE.Vector2(-5.0 + 10.0 * p.x, aspect * (-5.0 + 10.0 * p.y));
+
+        //u_grid_scale * u + s.yx / 2.
+        //var sp = new THREE.Vector2(app.gridScale * uv.x + s.y * 0.5, app.gridScale * uv.y + s.x * 0.5);
+        var sp = new THREE.Vector2(app.gridScale * uv.x, app.gridScale * uv.y);
+
+        // vec4 hC = floor(vec4(p, p - vec2(.5, 1)) / s.xyxy) + .5;  
+        var hcx = Math.floor(sp.x / s.x) + 0.5;
+        var hcy = Math.floor(sp.y / s.y) + 0.5;
+        var hcz = Math.floor((sp.x - 0.5) / s.x) + 0.5;
+        var hcw = Math.floor((sp.y - 1.0) / s.y) + 0.5;
+
+        var hC = new THREE.Vector4(hcx, hcy, hcz, hcw);
+
+        // Centering the coordinates- with the hexagon centers above.
+        //var h = vec4(p - hC.xy * s, p - (hC.zw + .5) * s);
+        var h = new THREE.Vector4(
+            sp.x - hC.x * s.x,
+            sp.y - hC.y * s.y,
+            sp.x - (hC.z + 0.5) * s.x,
+            sp.y - (hC.w + 0.5) * s.y
+        );
+
+
+        var h1 = new THREE.Vector2(h.x, h.y);
+        var h2 = new THREE.Vector2(h.z, h.w);
+
+        if (h1.lengthSq() < h2.lengthSq()) {
+            return new THREE.Vector4(h.x, h.y, hC.x, hC.y);
+        }
+        else {
+            return new THREE.Vector4(h.z, h.w, hC.z + 0.5, hC.w + 0.5);
+        }
+
+        //   return dot(h.xy, h.xy) < dot(h.zw, h.zw) ? vec4(h.xy, hC.xy) : vec4(h.zw, hC.zw + .5);
+    }
+
+    function PlacePeerToken(id, params) {
+
+        var r = 0.3 / app.gridScale;
+
+        var paramsObj = JSON.parse(params);
+
+        var np = new THREE.Vector3(
+            paramsObj.position.x,
+            paramsObj.position.y,
+            paramsObj.position.z
+            );
+
+        var tokenObj = app.scene.getObjectByName(id);
+
+        if (!tokenObj) {
+            console.log("creating token object");
+            //instantiate this peers object
+            tokenObj = new THREE.Mesh(
+                new THREE.SphereGeometry(r, 32, 32),
+                new THREE.MeshBasicMaterial({
+                    // map: texture
+                    color: 0xffff00
+                })
+            );
+            tokenObj.name = id;
+            tokenObj.position.set(np.x, np.y, np.z);
+            app.scene.add(tokenObj);
+        }
+        else {
+            //console.log("have token object");
+            tokenObj.position.set(np.x, np.y, np.z);
+        }
+
+    }
+
     function PlaceToken(id, params, event) {
 
         //var screenPoint = new THREE.Vector2(0,0);
-        app.mousePosition.x = ((event.clientX - renderer.domElement.offsetLeft) / renderer.domElement.clientWidth) * 2 - 1;
-        app.mousePosition.y = - ((event.clientY - renderer.domElement.offsetTop) / renderer.domElement.clientHeight) * 2 + 1;
+        app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
+        app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
+
+        var raycaster = new THREE.Raycaster();
 
         // update the picking ray with the camera and screenPoint position
         raycaster.setFromCamera(app.mousePosition, app.camera);
+
+        var s = new THREE.Vector2(1.0, 1.7320508);
 
         // calculate objects intersecting the picking ray
         const intersects = raycaster.intersectObjects(app.scene.children);
@@ -184,8 +287,65 @@ function main() {
             for (let i = 0; i < intersects.length; i++) {
 
                 //TODO: place token
-                console.log(intersects[i].point);
+                if (intersects[i].object.name === "GridObj") {
+                    // console.log(intersects[i].point);
+                    // console.log(intersects[i].uv);
 
+                    //TODO: snap to hex grid and calc radius
+                    //var p = intersects[i].uv;
+                    var r = 0.3 / app.gridScale;
+
+                    var aspect = app.imageSize.y / app.imageSize.x;
+                    var offset = new THREE.Vector3(5.0, aspect * 5.0, 0.0);
+
+                    console.log(offset.x + " " + offset.y);
+
+                    // var hP = getHex(p);//getHex(new THREE.Vector2(intersects[i].point.x, intersects[i].point.y));
+                    // var scale = 1.0;
+                    // var np = new THREE.Vector3(scale * hP.z, scale * hP.w, 0.001);//.sub(offset);
+                    // // np.x += app.debugParams.p_origin_x;
+                    // // np.y += app.debugParams.p_origin_y;
+                    // console.log("hex p: " + np.x + " " + np.y);
+
+                    var np = intersects[i].point;
+
+                    var tokenObj = app.scene.getObjectByName(app.peerId);
+
+                    if (!tokenObj) {
+                        console.log("creating token object");
+                        //instantiate this peers object
+                        tokenObj = new THREE.Mesh(
+                            new THREE.SphereGeometry(r, 32, 32),
+                            new THREE.MeshBasicMaterial({
+                                // map: texture
+                                color: 0xffff00
+                            })
+                        );
+                        tokenObj.name = app.peerId;
+                        tokenObj.position.set(np.x, np.y, np.z);
+                        app.scene.add(tokenObj);
+                    }
+                    else {
+                        //console.log("have token object");
+                        tokenObj.position.set(np.x, np.y, np.z);
+                    }
+
+                    //send message to host
+                    if (app.connection && app.connection.open) {
+
+                        var tokenParams = {
+                            peer: app.peer.id,
+                            position: np
+                        }
+
+                        var cue = {
+                            type: "token",
+                            body: JSON.stringify(tokenParams)
+                        }
+
+                        app.connection.send(cue);
+                    }
+                }
             }
         }
 
@@ -269,13 +429,14 @@ function main() {
 
         //create threejs scene
         app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
-        app.gridScale = 300.0;
+        app.gridScale = 1.0;
         app.gridOpacity = 0.75;
         app.imageSize = new THREE.Vector2(1920, 1080);
 
         //init threejs
         app.scene = new THREE.Scene();
-        app.camera = new THREE.PerspectiveCamera(75, app.clientSize.x / app.clientSize.y, 0.1, 100);
+        //app.camera = new THREE.PerspectiveCamera(75, app.clientSize.x / app.clientSize.y, 0.1, 100);
+        app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
         app.renderer = new THREE.WebGLRenderer();
         app.renderer.setSize(app.clientSize.x, app.clientSize.y);
         app.playerContent.appendChild(app.renderer.domElement);
@@ -283,7 +444,8 @@ function main() {
         //orbit controls
         app.controls = new OrbitControls(app.camera, app.renderer.domElement);
 
-        app.camera.position.set(0, 0, 5);
+        app.camera.position.set(0, 0, 2);
+        app.camera.lookAt(0.0, 0.0, 0.0);
         app.controls.update();
 
         //image plane
@@ -296,6 +458,8 @@ function main() {
             new THREE.PlaneGeometry(10.0, aspect * 10.0),
             new THREE.MeshBasicMaterial({
                 // map: texture
+                depthTest: true,
+                depthWrite: true
             })
         );
         app.imageObj.name = "ImageObj";
@@ -322,28 +486,57 @@ function main() {
         }
 
         app.gridObj = new THREE.Mesh(
-            new THREE.PlaneGeometry(100.0, aspect * 100.0),
+            new THREE.PlaneGeometry(10.0, aspect * 10.0),
             new THREE.ShaderMaterial({
                 vertexShader: MapShaders.buildMapVertexShader(),
                 fragmentShader: MapShaders.buildMapFragmentShader(),
-                depthWrite: false,
-                depthTest: true,
                 blending: THREE.AdditiveBlending,
+                transparent: true,
                 uniforms: app.shaderUniforms
             })
         );
         app.gridObj.position.set(0.0, 0.0, 0.001);
+        app.gridObj.name = "GridObj";
         app.scene.add(app.gridObj);
 
         //add handler
-        app.playerContent.addEventListener("mousedown", function(event){
+        app.playerContent.addEventListener("mousedown", function (event) {
 
             console.log("in event");
             LoadImage(null, null);
-
+            PlaceToken(null, null, event);
             //LoadSound(null, null, event);
 
         });
+
+
+        const gui = new GUI()
+        const mapFolder = gui.addFolder("Map Controls")
+
+        mapFolder.add(app.debugParams, "p_origin_x").min(-2.0).max(2.0).step(0.001).onChange(function () {
+
+            // var obj = app.scene.getObjectByName(app.peerId);
+            // if(obj)
+            // {
+            //     var x = obj.position.x;
+            //     obj.position.setX(x + app.debugParams.p_origin_x);
+            // }
+            // app.renderer.render(app.scene, app.camera);
+        });
+        mapFolder.add(app.debugParams, "p_origin_y").min(-2.0).max(2.0).step(0.001).onChange(function () {
+            // var obj = app.scene.getObjectByName(app.peerId);
+            // if(obj)
+            // {
+            //     var y = obj.position.y;
+            //     obj.position.setY(y + app.debugParams.p_origin_y);
+            // }
+            // app.renderer.render(app.scene, app.camera);
+        });
+
+
+
+        mapFolder.open()
+
 
         //set up render loop
         //TODO: link app to user interaction
@@ -387,6 +580,11 @@ function main() {
 
 
                 }
+            }
+
+            if (cueType === "token") {
+                const params = data.body;
+                PlacePeerToken(params.peer, params);
             }
 
             if (cueType === "soundstage") {
