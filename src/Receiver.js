@@ -138,7 +138,9 @@ function main() {
         // load a resource
         loader.load(
             // resource URL
-            'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
+            //'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
+
+            params.src,
 
             // onLoad callback
             function (texture) {
@@ -688,31 +690,14 @@ function main() {
                         // playerContent.style.backgroundImage = 'url(' + params.src + ')';
                         if (params.ui_state === "selected") {
                             if (!app.audioMap[id] || params.src != app.audioMap[id].src) {
-                                console.log("creating new video at: " + params.src);
+                                console.log("creating new image at: " + params.src);
 
-                                var videoCue = document.getElementById("video-cue");
+                                LoadImage(id, params);
+                                app.imageMap[id] = "debug";
 
-                                if (videoCue) {
-                                    app.playerContent.removeChild(videoCue);
-                                }
-
-                                videoCue = document.createElement("img");
-                                videoCue.className = "videoCue";
-                                videoCue.src = params.src;
-                                // videoCue.autoplay = true;
-                                videoCue.id = "video-cue";
-
-                                app.playerContent.appendChild(videoCue);
-
-                                app.audioMap[id] = params;
                             }
                         }
                         else if (params.ui_state === "empty") {
-                            var videoCue = document.getElementById("video-cue");
-
-                            if (videoCue) {
-                                app.playerContent.removeChild(videoCue);
-                            }
 
                             app.audioMap[id] = null;
                         }
