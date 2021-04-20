@@ -2,10 +2,13 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
-import { NearestMipMapLinearFilter, TetrahedronGeometry } from "three";
+import { MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as MapShaders from "./MapShaders.js";
 
 main();
@@ -19,7 +22,9 @@ function main() {
         camera: null,
         scene: null,
         controls: null,
+        transformControl: null,
         mousePosition: new THREE.Vector2(0.5, 0.5),
+        matcaps: {},
 
         //peerjs 
         peer: null,
@@ -36,7 +41,7 @@ function main() {
         gridOpacity: 0.75,
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
-        profileColor: Math.floor(Math.random()*16777215).toString(16),
+        profileColor: Math.floor(Math.random() * 16777215).toString(16),
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -70,6 +75,95 @@ function main() {
         else
             return results[1];
     };
+
+    function LoadModel(id, params) {
+
+
+        // const loader = new STLLoader();
+        // loader.load( './models/stl/ascii/slotted_disk.stl', function ( geometry ) {
+
+        //     const material = new THREE.MeshPhongMaterial( { color: 0xff5533, specular: 0x111111, shininess: 200 } );
+        //     const mesh = new THREE.Mesh( geometry, material );
+
+        //     mesh.position.set( 0, - 0.25, 0.6 );
+        //     mesh.rotation.set( 0, - Math.PI / 2, 0 );
+        //     mesh.scale.set( 0.5, 0.5, 0.5 );
+
+        //     mesh.castShadow = true;
+        //     mesh.receiveShadow = true;
+
+        //     scene.add( mesh );
+
+        // } );
+
+        // Instantiate a loader
+        const loader = new GLTFLoader();
+
+        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+        // const dracoLoader = new DRACOLoader();
+        // dracoLoader.setDecoderPath('/examples/js/libs/draco/');
+        // loader.setDRACOLoader(dracoLoader);
+
+        // Load a glTF resource
+        loader.load(
+            // resource URL
+            params.src,
+            // called when the resource is loaded
+            function (gltf) {
+
+                var bbox = new THREE.Box3().setFromObject(gltf.scene);
+                
+                var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
+                var scaleFactor = (0.9 / app.gridScale) / (baseDim) ;
+                gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+
+                gltf.scene.traverse( function( object ) {
+
+                    if ( object.isMesh ) {
+
+                        object.material = new THREE.MeshMatcapMaterial({
+                            matcap: app.matcaps.playerTokenMatcap,
+                            color: 0xa3a3a3
+                        });
+
+
+                        object.material.needsUpdate = true;
+
+                    }
+                
+                } );
+
+                //attach transform gizmo
+                app.transformControl.attach(gltf.scene);
+                app.scene.add(app.transformControl);
+
+                
+                app.scene.add(gltf.scene);
+                //app.scene.add(gltf.asset);
+
+                // gltf.animations; // Array<THREE.AnimationClip>
+                // gltf.scene; // THREE.Group
+                // gltf.scenes; // Array<THREE.Group>
+                // gltf.cameras; // Array<THREE.Camera>
+                // gltf.asset; // Object
+
+            },
+            // called while loading is progressing
+            function (xhr) {
+
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+
+            },
+            // called when loading has errors
+            function (error) {
+
+                console.log('An error happened');
+
+            }
+        );
+
+    }
 
 
     function LoadSound(id, params) {
@@ -129,6 +223,38 @@ function main() {
         });
     }
 
+    function PreLoad()
+    {
+        
+
+        // instantiate a loader
+        var loader = new THREE.TextureLoader();
+
+        console.log("loading matcap...");
+
+        // load a resource
+        loader.load(
+
+            'https://danbleton.nyc3.digitaloceanspaces.com/public/matcaps/512/B5BBB5_3B4026_6E745D_5C6147-512px.png',
+
+            // onLoad callback
+            function (texture) {
+
+                app.matcaps.playerTokenMatcap = texture;
+                console.log("Matcap created...");
+                
+            },
+
+            // onProgress callback currently not supported
+            undefined,
+
+            // onError callback
+            function (err) {
+                console.error('An error happened. Matcap.');
+            }
+        );
+    }
+
     function LoadImage(id, params) {
         // instantiate a loader
         var loader = new THREE.TextureLoader();
@@ -161,7 +287,7 @@ function main() {
 
                 app.imageObj.name = "ImageObj";
                 app.imageObj.position.setZ(0.0);
-                app.imageObj.rotation.set(-Math.PI/2, 0.0, 0.0);
+                app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
                 app.scene.add(app.imageObj);
 
                 app.scene.remove(app.scene.getObjectByName("GridObj"));
@@ -180,7 +306,7 @@ function main() {
                 );
                 app.gridObj.position.set(0.0, 0.01, 0.0);
                 app.gridObj.name = "GridObj";
-                app.gridObj.rotation.set(-Math.PI/2, 0.0, 0.0);
+                app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
                 app.scene.add(app.gridObj);
 
                 //recenter camera
@@ -253,7 +379,7 @@ function main() {
             paramsObj.position.x,
             paramsObj.position.y,
             paramsObj.position.z
-            );
+        );
 
         var peerColor = new THREE.Color(
             "#" + paramsObj.color
@@ -455,6 +581,9 @@ function main() {
         //init threejs
         app.scene = new THREE.Scene();
 
+        var light = new THREE.DirectionalLight('orange', 1.0);
+        app.scene.add(light);
+
         const near = 2;
         const far = 5;
         const color = 'black';
@@ -551,21 +680,21 @@ function main() {
                 app.renderer.setSize(width, height, false);
             }
             return needResize;
-          }
-        
-          function render() {
+        }
+
+        function render() {
             if (resizeRendererToDisplaySize()) {
-              const canvas = app.renderer.domElement;
-              app.camera.aspect = canvas.clientWidth / canvas.clientHeight;
-              app.camera.updateProjectionMatrix();
+                const canvas = app.renderer.domElement;
+                app.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                app.camera.updateProjectionMatrix();
             }
-        
+
             app.renderer.render(app.scene, app.camera);
-          }
-          render();
-        
-          app.controls.addEventListener('change', render);
-          window.addEventListener('resize', render);
+        }
+        render();
+
+        app.controls.addEventListener('change', render);
+        window.addEventListener('resize', render);
 
         //   const gui = new GUI()
         //   const mapFolder = gui.addFolder("Map Controls")
@@ -583,7 +712,16 @@ function main() {
         // });
         //   mapFolder.open()
 
-                  //add handler
+        app.transformControl = new TransformControls( app.camera, app.renderer.domElement );
+        app.transformControl.addEventListener( 'change', render );
+
+        app.transformControl.addEventListener( 'dragging-changed', function ( event ) {
+
+            app.controls.enabled = ! event.value;
+
+        } );
+
+        //add handler
         app.playerContent.addEventListener("dblclick", function (event) {
 
             console.log("in event");
@@ -595,8 +733,37 @@ function main() {
 
         });
 
+    
+        PreLoad();
 
-        LoadImage(null, null);
+
+        window.addEventListener( 'keydown', function ( event ) {
+
+            switch ( event.keyCode ) {
+
+                case 81: // Q
+                    app.transformControl.setSpace( app.transformControl.space === "local" ? "world" : "local" );
+                    break;
+
+                case 87: // W
+                    app.transformControl.setMode( "translate" );
+                    break;
+
+                case 69: // E
+                    app.transformControl.setMode( "rotate" );
+                    break;
+
+                case 82: // R
+                    app.transformControl.setMode( "scale" );
+                    break;
+             
+            }
+
+        } );
+
+        
+        //LoadImage(null, null);
+  
 
         //set up render loop
         //TODO: link app to user interaction
@@ -647,6 +814,11 @@ function main() {
                 PlacePeerToken(params.peer, params);
             }
 
+            // if (cueType === "model") {
+            //     const params = data.body;
+            //     LoadModel(params.peer, params);
+            // }
+
             if (cueType === "soundstage") {
                 for (const id in body) {
 
@@ -661,6 +833,10 @@ function main() {
                         }
 
                         app.audioMap[id] = params;
+                    }
+
+                    if (params.type === "model") {
+                        LoadModel(id, params);
                     }
 
                     if (params.type === "audio") {

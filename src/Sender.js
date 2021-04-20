@@ -68,6 +68,10 @@ function main() {
             return 'image';
         }
 
+        if(ext === 'gltf' || ext === 'glb' || ext === 'obj' || ext === 'stl') {
+            return 'model';
+        }
+
         return 'unknown';
     }
 
