@@ -43,6 +43,7 @@ function main() {
         profileColor: Math.floor(Math.random() * 16777215).toString(16),
         profileModel: null,
         activeObj: null,
+        transients: [],
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -147,6 +148,11 @@ function main() {
                 gltf.scene.userData.isTransient = true;
 
                 app.scene.add(gltf.scene);
+
+                app.camera.lookAt(gltf.scene.position);
+                app.controls.reset();
+
+                app.transients.push(gltf.scene);
 
             },
             // called while loading is progressing
@@ -323,15 +329,22 @@ function main() {
 
         console.log("loading image...");
 
-        app.scene.remove(app.transformControl);
+        app.transformControl.detach();
 
         //TODO: remove all objects excpet the camera?
         try {
-            app.scene.traverse( function ( object ) {
-                if ( object.userData.isTransient) {
-                    app.scene.remove(object);
-                }
-            });
+            // app.scene.traverse( function ( object ) {
+            //     if ( object.userData.isTransient) {
+            //         app.scene.remove(object);
+            //     }
+            // });
+
+            for(const obj of app.transients)
+            {
+                app.scene.remove(obj);
+            }
+
+            
         }
         catch(err)
         {
@@ -372,6 +385,8 @@ function main() {
                 app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
                 app.camera.position.set(0.0, 3.0, 0.0);
                 app.camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
+
+                app.controls.reset();
 
                 app.scene.remove(app.scene.getObjectByName("GridObj"));
 
@@ -527,7 +542,7 @@ function main() {
                 }
                 object.userData.isTransient = true;
             });
-
+            app.transients.push(tokenObj);
             tokenObj.userData.isTransient = true;
             app.scene.add(tokenObj);
 
@@ -567,6 +582,8 @@ function main() {
                 console.log(intersects[i].object.name);
 
                 if (intersects[i].object.name === "ImageObj" || intersects[i].object.name === "GridObj") {
+
+                    //app.scene.remove(app.transformControl);
                     continue;
                 }
 
@@ -592,6 +609,9 @@ function main() {
                 }
 
             }
+        }
+        else{
+            app.scene.remove(app.transformControl);
         }
 
     }
@@ -658,7 +678,7 @@ function main() {
                             }
                             object.userData.isTransient = true;
                         });
-
+                        app.transients.push(tokenObj);
                         tokenObj.userData.isTransient = true;
                         console.log("token adding to scene");
                         app.scene.add(tokenObj);
@@ -780,8 +800,6 @@ function main() {
         light.shadow.camera.far = 200;
 
         app.scene.add(light);
-
-
 
         const near = 2;
         const far = 5;
