@@ -102,13 +102,37 @@ function main() {
 
                 bbox = new THREE.Box3().setFromObject(gltf.scene);
 
+                // console.log(gltf.scene.textures);
+
+                // var matCapTex = gltf.scene.textures[0];
+
+                // if(!matCapTex)
+                //     matCapTex = app.matcaps.playerTokenMatcap;
+
+                var matCapMaterial = null
+
                 gltf.scene.traverse(function (object) {
                     if (object.isMesh) {
 
-                        object.material = new THREE.MeshMatcapMaterial({
-                            matcap: app.matcaps.playerTokenMatcap,
-                            //color: 0xa3a3a3
-                        });
+                        console.log(object.material);
+
+                        if(object.material.name === "matcap")
+                        {
+                            if(!matCapMaterial)
+                            {
+                                matCapMaterial = new THREE.MeshMatcapMaterial({
+                                    matcap: object.material.map,
+                                    color: 0xa3a3a3
+                                });
+                            }
+                        }
+
+                        object.material = matCapMaterial;
+
+                        // object.material = new THREE.MeshMatcapMaterial({
+                        //     matcap: app.matcaps.playerTokenMatcap,
+                        //     //color: 0xa3a3a3
+                        // });
                         object.material.needsUpdate = true;
 
                         object.userData.root = gltf.scene.id;
@@ -249,14 +273,23 @@ function main() {
 
                 //bbox = new THREE.Box3().setFromObject(gltf.scene);
 
+                // console.log(gltf.scene.textures);
+
+                // var matCapTex = gltf.scene.textures[0];
+
+                // if(!matCapTex)
+                //     matCapTex = app.matcaps.playerTokenMatcap;
+
+                var matCapMaterial = new THREE.MeshMatcapMaterial({
+                    matcap: app.matcaps.playerTokenMatcap,
+                    color: 0xa3a3a3
+                });
+
                 gltf.scene.traverse(function (object) {
 
                     if (object.isMesh) {
-
-                        object.material = new THREE.MeshMatcapMaterial({
-                            matcap: app.matcaps.playerTokenMatcap,
-                            color: 0xa3a3a3
-                        });
+                        
+                        object.material = matCapMaterial;
                         object.material.needsUpdate = true;
 
                     }
@@ -712,8 +745,11 @@ function main() {
         //init threejs
         app.scene = new THREE.Scene();
 
-        // var light = new THREE.DirectionalLight('orange', 1.0);
-        // app.scene.add(light);
+        var light = new THREE.DirectionalLight('white', 0.8);
+        light.position.set(0.0, 100, 0.0);
+        app.scene.add(light);
+
+    
 
         const near = 2;
         const far = 5;
@@ -722,10 +758,11 @@ function main() {
         app.scene.background = new THREE.Color(color);
 
 
-        app.camera = new THREE.PerspectiveCamera(75, app.clientSize.x / app.clientSize.y, 0.1, 100);
+        app.camera = new THREE.PerspectiveCamera(60, app.clientSize.x / app.clientSize.y, 0.1, 100);
         // app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
         app.camera.name = "MainCamera";
         app.renderer = new THREE.WebGLRenderer();
+        app.renderer.antialias = true;
         app.renderer.setSize(app.clientSize.x, app.clientSize.y);
         app.playerContent.appendChild(app.renderer.domElement);
 
@@ -737,7 +774,7 @@ function main() {
         app.controls.screenSpacePanning = false;
         app.controls.minDistance = 1.0;
         app.controls.maxDistance = 10.0;
-        app.controls.maxPolarAngle = Math.PI / 4;
+        app.controls.maxPolarAngle = Math.PI / 3;
 
         app.camera.position.set(0, 2, 0);
         app.camera.lookAt(0.0, 0.0, 0.0);
