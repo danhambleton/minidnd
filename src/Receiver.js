@@ -29,7 +29,6 @@ function main() {
         //peerjs 
         peer: null,
         connection: null,
-        peerId: null,
         lastPeerId: null,
 
         //app specific
@@ -42,6 +41,8 @@ function main() {
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
         profileColor: Math.floor(Math.random() * 16777215).toString(16),
+        profileModel: null,
+        activeObj: null,
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -78,24 +79,6 @@ function main() {
 
     function LoadModel(id, params) {
 
-
-        // const loader = new STLLoader();
-        // loader.load( './models/stl/ascii/slotted_disk.stl', function ( geometry ) {
-
-        //     const material = new THREE.MeshPhongMaterial( { color: 0xff5533, specular: 0x111111, shininess: 200 } );
-        //     const mesh = new THREE.Mesh( geometry, material );
-
-        //     mesh.position.set( 0, - 0.25, 0.6 );
-        //     mesh.rotation.set( 0, - Math.PI / 2, 0 );
-        //     mesh.scale.set( 0.5, 0.5, 0.5 );
-
-        //     mesh.castShadow = true;
-        //     mesh.receiveShadow = true;
-
-        //     scene.add( mesh );
-
-        // } );
-
         // Instantiate a loader
         const loader = new GLTFLoader();
 
@@ -112,41 +95,31 @@ function main() {
             function (gltf) {
 
                 var bbox = new THREE.Box3().setFromObject(gltf.scene);
-                
+
                 var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
-                var scaleFactor = (0.9 / app.gridScale) / (baseDim) ;
+                var scaleFactor = (10.0 * parseFloat(params.volume) / app.gridScale ) / (baseDim);
                 gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
+                bbox = new THREE.Box3().setFromObject(gltf.scene);
 
-                gltf.scene.traverse( function( object ) {
-
-                    if ( object.isMesh ) {
+                gltf.scene.traverse(function (object) {
+                    if (object.isMesh) {
 
                         object.material = new THREE.MeshMatcapMaterial({
                             matcap: app.matcaps.playerTokenMatcap,
-                            color: 0xa3a3a3
+                            //color: 0xa3a3a3
                         });
-
-
                         object.material.needsUpdate = true;
 
+                        object.userData.root = gltf.scene.id;
+                        
                     }
-                
-                } );
+                    object.userData.isTransient = true;
+                });
 
-                //attach transform gizmo
-                app.transformControl.attach(gltf.scene);
-                app.scene.add(app.transformControl);
+                gltf.scene.userData.isTransient = true;
 
-                
                 app.scene.add(gltf.scene);
-                //app.scene.add(gltf.asset);
-
-                // gltf.animations; // Array<THREE.AnimationClip>
-                // gltf.scene; // THREE.Group
-                // gltf.scenes; // Array<THREE.Group>
-                // gltf.cameras; // Array<THREE.Camera>
-                // gltf.asset; // Object
 
             },
             // called while loading is progressing
@@ -223,9 +196,8 @@ function main() {
         });
     }
 
-    function PreLoad()
-    {
-        
+    function PreLoad() {
+
 
         // instantiate a loader
         var loader = new THREE.TextureLoader();
@@ -242,7 +214,7 @@ function main() {
 
                 app.matcaps.playerTokenMatcap = texture;
                 console.log("Matcap created...");
-                
+
             },
 
             // onProgress callback currently not supported
@@ -253,6 +225,60 @@ function main() {
                 console.error('An error happened. Matcap.');
             }
         );
+
+        // Instantiate a loader
+        const gltfLoader = new GLTFLoader();
+
+        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+        // const dracoLoader = new DRACOLoader();
+        // dracoLoader.setDecoderPath('/examples/js/libs/draco/');
+        // loader.setDRACOLoader(dracoLoader);
+
+        // Load a glTF resource
+        gltfLoader.load(
+            // resource URL
+            'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb',
+            // called when the resource is loaded
+            function (gltf) {
+
+                var bbox = new THREE.Box3().setFromObject(gltf.scene);
+
+                var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
+                var scaleFactor = (0.9 / app.gridScale) / (baseDim);
+                gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+                //bbox = new THREE.Box3().setFromObject(gltf.scene);
+
+                gltf.scene.traverse(function (object) {
+
+                    if (object.isMesh) {
+
+                        object.material = new THREE.MeshMatcapMaterial({
+                            matcap: app.matcaps.playerTokenMatcap,
+                            color: 0xa3a3a3
+                        });
+                        object.material.needsUpdate = true;
+
+                    }
+
+                });
+
+                app.profileModel = gltf.scene;
+                //app.scene.add(app.profileModel);
+            },
+            // called while loading is progressing
+            function (xhr) {
+
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+
+            },
+            // called when loading has errors
+            function (error) {
+
+                console.log('An error happened');
+
+            }
+        );
     }
 
     function LoadImage(id, params) {
@@ -260,6 +286,22 @@ function main() {
         var loader = new THREE.TextureLoader();
 
         console.log("loading image...");
+
+        app.scene.remove(app.transformControl);
+
+        //TODO: remove all objects excpet the camera?
+        try {
+            app.scene.traverse( function ( object ) {
+                if ( object.userData.isTransient) {
+                    app.scene.remove(object);
+                }
+            });
+        }
+        catch(err)
+        {
+
+        }
+
 
         // load a resource
         loader.load(
@@ -290,27 +332,45 @@ function main() {
                 app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
                 app.scene.add(app.imageObj);
 
+                app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
+                app.camera.position.set(0.0, 3.0, 0.0);
+                app.camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
+
                 app.scene.remove(app.scene.getObjectByName("GridObj"));
 
                 app.shaderUniforms.u_image_dims.value = app.imageSize;
 
-                app.gridObj = new THREE.Mesh(
-                    new THREE.PlaneGeometry(10.0, aspect * 10.0),
-                    new THREE.ShaderMaterial({
-                        vertexShader: MapShaders.buildMapVertexShader(),
-                        fragmentShader: MapShaders.buildMapFragmentShader(),
-                        blending: THREE.NormalBlending,
-                        transparent: true,
-                        uniforms: app.shaderUniforms
-                    })
-                );
-                app.gridObj.position.set(0.0, 0.01, 0.0);
-                app.gridObj.name = "GridObj";
-                app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
-                app.scene.add(app.gridObj);
+                console.log(params);
+
+                if(parseFloat(params.loop) > 0.5)
+                {
+                    
+                    console.log("building grid obj...");
+                    
+                    app.gridScale = 10.0 * parseFloat(params.volume);
+                    app.gridOpacity = parseFloat(params.reverb);
+                    app.shaderUniforms.u_grid_scale.value = app.gridScale       
+                    app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
+
+                    app.gridObj = new THREE.Mesh(
+                        new THREE.PlaneGeometry(10.0, aspect * 10.0),
+                        new THREE.ShaderMaterial({
+                            vertexShader: MapShaders.buildMapVertexShader(),
+                            fragmentShader: MapShaders.buildMapFragmentShader(),
+                            blending: THREE.NormalBlending,
+                            transparent: true,
+                            uniforms: app.shaderUniforms
+                        })
+                    );
+                    app.gridObj.position.set(0.0, 0.01, 0.0);
+                    app.gridObj.name = "GridObj";
+                    app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
+
+                    app.scene.add(app.gridObj);
+                }
 
                 //recenter camera
-                app.camera.position.set(0, 2, 0);
+                //app.camera.position.set(0, 2, 0);
 
                 app.renderer.render(app.scene, app.camera);
             },
@@ -381,33 +441,113 @@ function main() {
             paramsObj.position.z
         );
 
+        var ns = new THREE.Vector3(
+            paramsObj.scale.x,
+            paramsObj.scale.y,
+            paramsObj.scale.z
+        );
+
+        var nr = new THREE.Vector3(
+            paramsObj.rotation.x,
+            paramsObj.rotation.y,
+            paramsObj.rotation.z
+        )
+
         var peerColor = new THREE.Color(
             "#" + paramsObj.color
         );
 
-        var tokenObj = app.scene.getObjectByName(paramsObj.peer);
+        var tokenObj = app.scene.getObjectByName(paramsObj.obj_name);
 
         if (!tokenObj) {
-            console.log("creating token object: " + paramsObj.peer);
-            //instantiate this peers object
-            tokenObj = new THREE.Mesh(
-                new THREE.SphereGeometry(r, 32, 32),
-                new THREE.MeshBasicMaterial({
-                    // map: texture
-                    color: peerColor
-                })
-            );
-            tokenObj.name = paramsObj.peer;
+            console.log("creating token object");
+            tokenObj = app.profileModel.clone();
+
+            tokenObj.name = paramsObj.obj_name;
             tokenObj.position.set(np.x, np.y, np.z);
+            tokenObj.scale.set(ns.x, ns.y, ns.z);
+            tokenObj.rotation.set(nr);
+
+            //create a new material
+            var newMat = new THREE.MeshMatcapMaterial({
+                matcap: app.matcaps.playerTokenMatcap
+            })
+
+            tokenObj.traverse(function (object) {
+                if (object.isMesh) {
+                    object.material = newMat;
+                    object.material.color.set(peerColor);
+                    object.material.needsUpdate = true;
+                    object.userData.root = tokenObj.id;
+                    
+                }
+                object.userData.isTransient = true;
+            });
+
+            tokenObj.userData.isTransient = true;
             app.scene.add(tokenObj);
+
         }
         else {
             //console.log("have token object");
-            console.log("updating token object: " + paramsObj.peer);
+            console.log("updating token object: " + paramsObj.obj_name);
             tokenObj.position.set(np.x, np.y, np.z);
+            tokenObj.scale.set(ns.x, ns.y, ns.z);
+            tokenObj.rotation.set(nr);
         }
 
         app.renderer.render(app.scene, app.camera);
+
+    }
+
+    function SelectToken(event) {
+
+        //var screenPoint = new THREE.Vector2(0,0);
+        app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
+        app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
+
+        var raycaster = new THREE.Raycaster();
+
+        // update the picking ray with the camera and screenPoint position
+        raycaster.setFromCamera(app.mousePosition, app.camera);
+
+        var s = new THREE.Vector2(1.0, 1.7320508);
+
+        // calculate objects intersecting the picking ray
+        const intersects = raycaster.intersectObjects(app.scene.children, true);
+
+        if (intersects.length > 0) {
+            for (let i = 0; i < intersects.length; i++) {
+
+                console.log(intersects[i].object.name);
+
+                if (intersects[i].object.name === "ImageObj" || intersects[i].object.name === "GridObj") {
+                    continue;
+                }
+
+                if (intersects[i].object.isMesh) {
+
+
+                    if (intersects[i].object.userData.root) {
+                        var rootObj = app.scene.getObjectById(intersects[i].object.userData.root);
+
+                        if (rootObj) {
+                            //otherwise attach the transform control
+                            app.scene.remove(app.transformControl);
+                            app.transformControl.attach(rootObj);
+                            app.scene.add(app.transformControl);
+
+                            app.activeObj = rootObj;
+                            app.activeObj.name = rootObj.name;
+
+                            console.log("active obj: " + rootObj.name);
+                        }
+                    }
+
+                }
+
+            }
+        }
 
     }
 
@@ -432,11 +572,7 @@ function main() {
 
                 //TODO: place token
                 if (intersects[i].object.name === "GridObj") {
-                    // console.log(intersects[i].point);
-                    // console.log(intersects[i].uv);
 
-                    //TODO: snap to hex grid and calc radius
-                    //var p = intersects[i].uv;
                     var r = 0.3 / app.gridScale;
 
                     var aspect = app.imageSize.y / app.imageSize.x;
@@ -444,51 +580,46 @@ function main() {
 
                     console.log(offset.x + " " + offset.y);
 
-                    // var hP = getHex(p);//getHex(new THREE.Vector2(intersects[i].point.x, intersects[i].point.y));
-                    // var scale = 1.0;
-                    // var np = new THREE.Vector3(scale * hP.z, scale * hP.w, 0.001);//.sub(offset);
-                    // // np.x += app.debugParams.p_origin_x;
-                    // // np.y += app.debugParams.p_origin_y;
-                    // console.log("hex p: " + np.x + " " + np.y);
-
                     var np = intersects[i].point;
 
-                    var tokenObj = app.scene.getObjectByName(app.peerId);
+                    var tokenObj = app.scene.getObjectByName(app.peer.id);
 
                     if (!tokenObj) {
                         console.log("creating token object");
-                        //instantiate this peers object
-                        tokenObj = new THREE.Mesh(
-                            new THREE.SphereGeometry(r, 32, 32),
-                            new THREE.MeshBasicMaterial({
-                                // map: texture
-                                color: new THREE.Color("#" + app.profileColor)
-                            })
+                        tokenObj = app.profileModel.clone();
+
+                        var col = new THREE.Color(
+                            "#" + app.profileColor
                         );
-                        tokenObj.name = app.peerId;
+
+                        // tokenObj.material.color.set(col);
+                        // tokenObj.material.needsUpdate = true;
+
+                        console.log("token cloned:=");
+                        tokenObj.name = app.peer.id;
                         tokenObj.position.set(np.x, np.y, np.z);
+
+                        console.log("changing material colors");
+                        tokenObj.traverse(function (object) {
+                            if (object.isMesh) {
+
+                                object.material.color.set(col);
+                                object.material.needsUpdate = true;
+                                object.userData.root = tokenObj.id;
+                                
+                            }
+                            object.userData.isTransient = true;
+                        });
+
+                        tokenObj.userData.isTransient = true;
+                        console.log("token adding to scene");
                         app.scene.add(tokenObj);
+
+
                     }
                     else {
-                        //console.log("have token object");
-                        tokenObj.position.set(np.x, np.y, np.z);
-                    }
-
-                    //send message to host
-                    if (app.connection && app.connection.open) {
-
-                        var tokenParams = {
-                            peer: app.peer.id,
-                            position: np,
-                            color: app.profileColor
-                        }
-
-                        var cue = {
-                            type: "token",
-                            body: JSON.stringify(tokenParams)
-                        }
-
-                        app.connection.send(cue);
+                        console.log("have token object");
+                        //tokenObj.position.set(np.x, np.y, np.z);
                     }
                 }
             }
@@ -581,8 +712,8 @@ function main() {
         //init threejs
         app.scene = new THREE.Scene();
 
-        var light = new THREE.DirectionalLight('orange', 1.0);
-        app.scene.add(light);
+        // var light = new THREE.DirectionalLight('orange', 1.0);
+        // app.scene.add(light);
 
         const near = 2;
         const far = 5;
@@ -593,6 +724,7 @@ function main() {
 
         app.camera = new THREE.PerspectiveCamera(75, app.clientSize.x / app.clientSize.y, 0.1, 100);
         // app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
+        app.camera.name = "MainCamera";
         app.renderer = new THREE.WebGLRenderer();
         app.renderer.setSize(app.clientSize.x, app.clientSize.y);
         app.playerContent.appendChild(app.renderer.domElement);
@@ -610,27 +742,7 @@ function main() {
         app.camera.position.set(0, 2, 0);
         app.camera.lookAt(0.0, 0.0, 0.0);
 
-
         app.controls.update();
-
-        //image plane
-        var aspect = app.imageSize.y / app.imageSize.x;
-
-        // app.imageSize = new THREE.Vector2(texture.image.width, texture.image.height);
-        // var aspect = app.imageSize.y / app.imageSize.x;
-
-        app.imageObj = new THREE.Mesh(
-            new THREE.PlaneGeometry(10.0, aspect * 10.0),
-            new THREE.MeshBasicMaterial({
-                // map: texture
-                depthTest: true,
-                depthWrite: true
-            })
-        );
-        app.imageObj.name = "ImageObj";
-        app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
-        app.scene.add(app.imageObj);
-
 
         //hex grid plane
         app.debugParams = {
@@ -653,22 +765,6 @@ function main() {
             u_grid_spacing: { value: app.debugParams.p_grid_spacing },
             u_image_dims: { value: app.imageSize },
         }
-
-        app.gridObj = new THREE.Mesh(
-            new THREE.PlaneGeometry(10.0, aspect * 10.0),
-            new THREE.ShaderMaterial({
-                vertexShader: MapShaders.buildMapVertexShader(),
-                fragmentShader: MapShaders.buildMapFragmentShader(),
-                blending: THREE.NormalBlending,
-                transparent: true,
-                uniforms: app.shaderUniforms
-            })
-        );
-        app.gridObj.position.set(0.0, 0.01, 0.0);
-        app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
-        app.gridObj.name = "GridObj";
-        app.scene.add(app.gridObj);
-
 
 
         function resizeRendererToDisplaySize() {
@@ -696,88 +792,109 @@ function main() {
         app.controls.addEventListener('change', render);
         window.addEventListener('resize', render);
 
-        //   const gui = new GUI()
-        //   const mapFolder = gui.addFolder("Map Controls")
-        //   mapFolder.add(app.debugParams, "p_grid_scale").min(0.001).max(20.0).step(0.001).onChange(function () {
-        //       app.shaderUniforms.u_grid_scale.value = app.debugParams.p_grid_scale;
-        //       app.renderer.render(app.scene, app.camera);
-        //   });
-        //   mapFolder.add(app.debugParams, "p_grid_alpha").min(0.0).max(2.0).step(0.001).onChange(function () {
-        //     app.shaderUniforms.u_grid_alpha.value = app.debugParams.p_grid_alpha;
-        //       app.renderer.render(app.scene, app.camera);
-        //   });
-        //   mapFolder.add(app.debugParams, "p_grid_spacing").min(0.0).max(2.0).step(0.001).onChange(function () {
-        //     app.shaderUniforms.u_grid_spacing.value = app.debugParams.p_grid_spacing;
-        //     app.renderer.render(app.scene, app.camera);
-        // });
-        //   mapFolder.open()
+        app.transformControl = new TransformControls(app.camera, app.renderer.domElement);
 
-        app.transformControl = new TransformControls( app.camera, app.renderer.domElement );
-        app.transformControl.addEventListener( 'change', render );
+        app.transformControl.addEventListener('change', render);
 
-        app.transformControl.addEventListener( 'dragging-changed', function ( event ) {
+        app.transformControl.addEventListener('dragging-changed', function (event) {
 
-            app.controls.enabled = ! event.value;
+            app.controls.enabled = !event.value;
 
-        } );
+            //send message to host
+            if (app.connection && app.connection.open) {
+
+                var tokenParams = {
+                    peer: app.peer.id,
+                    obj_name: app.activeObj.name,
+                    position: app.activeObj.position,
+                    scale: app.activeObj.scale,
+                    rotation: app.activeObj.rotation,
+                    color: app.profileColor
+                }
+
+                console.log(tokenParams);
+
+                var cue = {
+                    type: "token",
+                    body: JSON.stringify(tokenParams)
+                }
+
+                app.connection.send(cue);
+            }
+
+        });
+
+        app.playerContent.addEventListener("click", function (event) {
+
+            SelectToken(event);
+            render();
+
+        });
 
         //add handler
         app.playerContent.addEventListener("dblclick", function (event) {
 
             console.log("in event");
             //LoadImage(null, null);
+
             PlaceToken(null, null, event);
+            render();
+
             //LoadSound(null, null, event);
+
+            //send message to host
+            if (app.connection && app.connection.open) {
+
+                var tokenParams = {
+                    peer: app.peer.id,
+                    obj_name: app.activeObj.name,
+                    position: app.activeObj.position,
+                    scale: app.activeObj.scale,
+                    rotation: app.activeObj.rotation,
+                    color: app.profileColor
+                }
+
+                console.log(tokenParams);
+
+                var cue = {
+                    type: "token",
+                    body: JSON.stringify(tokenParams)
+                }
+
+                app.connection.send(cue);
+            }
 
             render();
 
         });
 
-    
+        LoadImage(null, { src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/cofg.png' });
+
         PreLoad();
 
+        window.addEventListener('keydown', function (event) {
 
-        window.addEventListener( 'keydown', function ( event ) {
-
-            switch ( event.keyCode ) {
+            switch (event.keyCode) {
 
                 case 81: // Q
-                    app.transformControl.setSpace( app.transformControl.space === "local" ? "world" : "local" );
+                    app.transformControl.setSpace(app.transformControl.space === "local" ? "world" : "local");
                     break;
 
                 case 87: // W
-                    app.transformControl.setMode( "translate" );
+                    app.transformControl.setMode("translate");
                     break;
 
                 case 69: // E
-                    app.transformControl.setMode( "rotate" );
+                    app.transformControl.setMode("rotate");
                     break;
 
                 case 82: // R
-                    app.transformControl.setMode( "scale" );
+                    app.transformControl.setMode("scale");
                     break;
-             
+
             }
 
-        } );
-
-        
-        //LoadImage(null, null);
-  
-
-        //set up render loop
-        //TODO: link app to user interaction
-        // function animate() {
-
-        //     requestAnimationFrame(animate);
-
-        //     app.controls.update();
-
-        //     app.renderer.render(app.scene, app.camera);
-        //     // composer.render(clock.getDelta());
-        // }
-
-        // animate();
+        });
 
     };
 
@@ -836,7 +953,25 @@ function main() {
                     }
 
                     if (params.type === "model") {
-                        LoadModel(id, params);
+
+                        if (!app.audioMap[id] || params.src != app.audioMap[id].src) {
+                            //LoadModel(id, params);
+                        }
+
+                        if (params.ui_state === "selected") {
+                            // contentMap[id].media.stop();
+                            console.log("loading model: " + params.src);
+                            LoadModel(id, params)
+
+                        }
+
+                        else if (params.ui_state === "ready") {
+                            //remove
+                        }
+
+                        else if (params.ui_state === "empty") {
+                            //remove
+                        }
                     }
 
                     if (params.type === "audio") {
@@ -875,7 +1010,7 @@ function main() {
                         }
                         else if (params.ui_state === "empty") {
 
-                            app.audioMap[id] = null;
+                            app.imageMap[id] = null;
                         }
                     }
 
