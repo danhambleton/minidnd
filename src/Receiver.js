@@ -2,7 +2,7 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
-import { MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry } from "three";
+import { MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry, Vector3 } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
@@ -136,6 +136,9 @@ function main() {
                         object.material.needsUpdate = true;
 
                         object.userData.root = gltf.scene.id;
+
+                        object.castShadow = true;
+                        object.receiveShadow = true;
                         
                     }
                     object.userData.isTransient = true;
@@ -353,7 +356,7 @@ function main() {
 
                 app.imageObj = new THREE.Mesh(
                     new THREE.PlaneGeometry(10.0, aspect * 10.0),
-                    new THREE.MeshBasicMaterial({
+                    new THREE.MeshLambertMaterial({
                         map: texture,
                         depthTest: true,
                         depthWrite: true
@@ -363,6 +366,7 @@ function main() {
                 app.imageObj.name = "ImageObj";
                 app.imageObj.position.setZ(0.0);
                 app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
+                app.imageObj.receiveShadow = true;
                 app.scene.add(app.imageObj);
 
                 app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
@@ -398,6 +402,8 @@ function main() {
                     app.gridObj.position.set(0.0, 0.01, 0.0);
                     app.gridObj.name = "GridObj";
                     app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
+
+                    app.gridObj.receiveShadow = true;
 
                     app.scene.add(app.gridObj);
                 }
@@ -490,6 +496,9 @@ function main() {
             "#" + paramsObj.color
         );
 
+        console.log("peer token params:" + params);
+        console.log(nr);
+
         var tokenObj = app.scene.getObjectByName(paramsObj.obj_name);
 
         if (!tokenObj) {
@@ -499,7 +508,7 @@ function main() {
             tokenObj.name = paramsObj.obj_name;
             tokenObj.position.set(np.x, np.y, np.z);
             tokenObj.scale.set(ns.x, ns.y, ns.z);
-            // tokenObj.rotation.set(nr);
+            tokenObj.rotation.set(nr.x, nr.y, nr.z);
 
             //create a new material
             var newMat = new THREE.MeshMatcapMaterial({
@@ -512,6 +521,8 @@ function main() {
                     object.material.color.set(peerColor);
                     object.material.needsUpdate = true;
                     object.userData.root = tokenObj.id;
+                    object.castShadow = true;
+                    object.receiveShadow = true;
                     
                 }
                 object.userData.isTransient = true;
@@ -526,7 +537,8 @@ function main() {
             console.log("updating token object: " + paramsObj.obj_name);
             tokenObj.position.set(np.x, np.y, np.z);
             tokenObj.scale.set(ns.x, ns.y, ns.z);
-            // tokenObj.rotation.set(nr);
+            tokenObj.rotation.set(nr.x, nr.y, nr.z);
+
         }
 
         app.renderer.render(app.scene, app.camera);
@@ -639,6 +651,9 @@ function main() {
                                 object.material.color.set(col);
                                 object.material.needsUpdate = true;
                                 object.userData.root = tokenObj.id;
+                                object.castShadow = true;
+                                object.receiveShadow = true;
+                                
                                 
                             }
                             object.userData.isTransient = true;
@@ -745,11 +760,28 @@ function main() {
         //init threejs
         app.scene = new THREE.Scene();
 
-        var light = new THREE.DirectionalLight('white', 0.8);
-        light.position.set(0.0, 100, 0.0);
+        const light = new THREE.DirectionalLight( new THREE.Color(0.7, 0.7, 0.7), 1 );
+        light.position.set( 0, 100, 0 );
+        light.position.multiplyScalar( 1.3 );
+        //light.lookAt(new Vector3(0.0, 0.0, 0.0));
+
+        light.castShadow = true;
+
+        light.shadow.mapSize.width = 1024;
+        light.shadow.mapSize.height = 1024;
+
+        const d = 10;
+
+        light.shadow.camera.left = - d;
+        light.shadow.camera.right = d;
+        light.shadow.camera.top = d;
+        light.shadow.camera.bottom = - d;
+
+        light.shadow.camera.far = 200;
+
         app.scene.add(light);
 
-    
+
 
         const near = 2;
         const far = 5;
@@ -757,12 +789,18 @@ function main() {
         app.scene.fog = new THREE.Fog(color, near, far);
         app.scene.background = new THREE.Color(color);
 
+        const ambLight = new THREE.AmbientLight( 0x404040 ); // soft white light
+        app.scene.add( ambLight );
+
 
         app.camera = new THREE.PerspectiveCamera(60, app.clientSize.x / app.clientSize.y, 0.1, 100);
         // app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
         app.camera.name = "MainCamera";
-        app.renderer = new THREE.WebGLRenderer();
-        app.renderer.antialias = true;
+        app.renderer = new THREE.WebGLRenderer({antialias: true});
+        app.renderer.shadowMap.enabled = true;
+        app.renderer.shadowMapSoft = true;
+        app.renderer.gammaOutput = true;
+        app.renderer.gammaFactor = 1.5;
         app.renderer.setSize(app.clientSize.x, app.clientSize.y);
         app.playerContent.appendChild(app.renderer.domElement);
 
@@ -958,8 +996,6 @@ function main() {
 
                 if (params.type === "audio") {
 
-
-
                 }
             }
 
@@ -967,11 +1003,6 @@ function main() {
                 const params = data.body;
                 PlacePeerToken(params.peer, params);
             }
-
-            // if (cueType === "model") {
-            //     const params = data.body;
-            //     LoadModel(params.peer, params);
-            // }
 
             if (cueType === "soundstage") {
                 for (const id in body) {
@@ -1151,12 +1182,6 @@ function main() {
     function clearMessages() {
         app.message.innerHTML = "";
         addMessage("Msgs cleared");
-
-
-
-
-
-
     }
 
     // Listen for enter in message box
