@@ -448,9 +448,9 @@ function main() {
         );
 
         var nr = new THREE.Vector3(
-            paramsObj.rotation.x,
-            paramsObj.rotation.y,
-            paramsObj.rotation.z
+            paramsObj.rotation._x,
+            paramsObj.rotation._y,
+            paramsObj.rotation._z
         )
 
         var peerColor = new THREE.Color(
@@ -466,7 +466,7 @@ function main() {
             tokenObj.name = paramsObj.obj_name;
             tokenObj.position.set(np.x, np.y, np.z);
             tokenObj.scale.set(ns.x, ns.y, ns.z);
-            tokenObj.rotation.set(nr);
+            // tokenObj.rotation.set(nr);
 
             //create a new material
             var newMat = new THREE.MeshMatcapMaterial({
@@ -493,7 +493,7 @@ function main() {
             console.log("updating token object: " + paramsObj.obj_name);
             tokenObj.position.set(np.x, np.y, np.z);
             tokenObj.scale.set(ns.x, ns.y, ns.z);
-            tokenObj.rotation.set(nr);
+            // tokenObj.rotation.set(nr);
         }
 
         app.renderer.render(app.scene, app.camera);
