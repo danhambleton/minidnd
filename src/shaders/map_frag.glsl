@@ -5,6 +5,10 @@ uniform float u_grid_alpha;
 uniform float u_grid_spacing;
 uniform vec2 u_image_dims;
 
+uniform vec3 fogColor;
+uniform float fogNear;
+uniform float fogFar;
+
 // uniform sampler2D baseMap;
 
 #extension GL_OES_standard_derivatives : enable
@@ -149,6 +153,16 @@ void main() {
     // vec2 uv_remap = inv_scale * vUv + vec2(offset) + (u_origin - vec2(0.5));
 
     // vec4 mapCol = texture2D(baseMap, uv_remap );
+
+    #ifdef USE_FOG
+        #ifdef USE_LOGDEPTHBUF_EXT
+            float depth = gl_FragDepthEXT / gl_FragCoord.w;
+        #else
+            float depth = gl_FragCoord.z / gl_FragCoord.w;
+        #endif
+        float fogFactor = smoothstep( fogNear, fogFar, depth );
+        hexCol.rgb = mix( hexCol.rgb, fogColor, fogFactor );
+    #endif
 
 
   gl_FragColor = hexCol;//vec4(eDist / u_grid_scale);//u_grid_alpha * hexCol;//(vec4(hexCol, 1.0) + vec4(0.3)) * mapCol;//mix(vec4(hexCol, 0.8), mapCol, 0.8);

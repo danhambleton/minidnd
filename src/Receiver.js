@@ -413,7 +413,8 @@ function main() {
                             fragmentShader: MapShaders.buildMapFragmentShader(),
                             blending: THREE.NormalBlending,
                             transparent: true,
-                            uniforms: app.shaderUniforms
+                            uniforms: app.shaderUniforms,
+                            fog: true
                         })
                     );
                     app.gridObj.position.set(0.0, 0.01, 0.0);
@@ -859,6 +860,9 @@ function main() {
             u_grid_alpha: { value: app.gridOpacity },
             u_grid_spacing: { value: app.debugParams.p_grid_spacing },
             u_image_dims: { value: app.imageSize },
+            fogColor:    { type: "c", value: app.scene.fog.color },
+            fogNear:     { type: "f", value: app.scene.fog.near },
+            fogFar:      { type: "f", value: app.scene.fog.far }
         }
 
 
