@@ -890,7 +890,10 @@ function main() {
 
 
             app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
+            // app.renderer.domElement.width = app.clientSize.x;
+            // app.renderer.domElement.height = app.clientSize.y;
             app.camera.aspect = app.clientSize.x / app.clientSize.y;
+            app.renderer.setSize(app.clientSize.x, app.clientSize.y);
             app.camera.updateProjectionMatrix();
             
             console.log("updating window size");
