@@ -158,7 +158,9 @@ function main() {
             // called while loading is progressing
             function (xhr) {
 
-                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                var msg = (xhr.loaded / xhr.total * 100) + '% loaded';
+                app.status.innerHTML = msg;
+                console.log(msg);
 
             },
             // called when loading has errors
@@ -866,6 +868,7 @@ function main() {
             const height = canvas.clientHeight;
             const needResize = canvas.width !== width || canvas.height !== height;
             if (needResize) {
+                console.log("resizing renderer...");
                 app.renderer.setSize(width, height, false);
             }
             return needResize;
@@ -883,7 +886,17 @@ function main() {
         render();
 
         app.controls.addEventListener('change', render);
-        window.addEventListener('resize', render);
+        window.addEventListener('resize', function(){
+
+
+            app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
+            app.camera.aspect = app.clientSize.x / app.clientSize.y;
+            app.camera.updateProjectionMatrix();
+            
+            console.log("updating window size");
+            render();
+
+        });
 
         app.transformControl = new TransformControls(app.camera, app.renderer.domElement);
 
