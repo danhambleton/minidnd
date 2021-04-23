@@ -128,7 +128,12 @@ function main() {
                             }
                         }
 
-                        object.material = matCapMaterial;
+                        if(matCapMaterial)
+                        {
+                            object.material = matCapMaterial;
+                        }
+
+                        
 
                         // object.material = new THREE.MeshMatcapMaterial({
                         //     matcap: app.matcaps.playerTokenMatcap,
