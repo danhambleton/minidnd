@@ -10,12 +10,13 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as MapShaders from "./MapShaders.js";
+import { Actions } from "./Actions.js"
 
 main();
 
 function main() {
 
-    let app = {
+    const app = {
 
         //Threejs
         renderer: null,
@@ -58,6 +59,8 @@ function main() {
 
     };
 
+    const actions = new Actions();
+
     /**
      * Create the Peer object for our end of the connection.
      *
@@ -80,102 +83,11 @@ function main() {
 
     function LoadModel(id, params) {
 
-        // Instantiate a loader
-        const loader = new GLTFLoader();
+        actions.loadModel(params, function(){
 
-        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
-        // const dracoLoader = new DRACOLoader();
-        // dracoLoader.setDecoderPath('/examples/js/libs/draco/');
-        // loader.setDRACOLoader(dracoLoader);
+            console.log("post model load...");
 
-        // Load a glTF resource
-        loader.load(
-            // resource URL
-            params.src,
-            // called when the resource is loaded
-            function (gltf) {
-
-                var bbox = new THREE.Box3().setFromObject(gltf.scene);
-
-                var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
-                var scaleFactor = (10.0 * parseFloat(params.volume) / app.gridScale ) / (baseDim);
-                gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-                bbox = new THREE.Box3().setFromObject(gltf.scene);
-
-                // console.log(gltf.scene.textures);
-
-                // var matCapTex = gltf.scene.textures[0];
-
-                // if(!matCapTex)
-                //     matCapTex = app.matcaps.playerTokenMatcap;
-
-                var matCapMaterial = null
-
-                gltf.scene.traverse(function (object) {
-                    if (object.isMesh) {
-
-                        console.log(object.material);
-
-                        if(object.material.name === "matcap")
-                        {
-                            if(!matCapMaterial)
-                            {
-                                matCapMaterial = new THREE.MeshMatcapMaterial({
-                                    matcap: object.material.map,
-                                    color: 0xa3a3a3
-                                });
-                            }
-                        }
-
-                        if(matCapMaterial)
-                        {
-                            object.material = matCapMaterial;
-                        }
-
-                        
-
-                        // object.material = new THREE.MeshMatcapMaterial({
-                        //     matcap: app.matcaps.playerTokenMatcap,
-                        //     //color: 0xa3a3a3
-                        // });
-                        object.material.needsUpdate = true;
-
-                        object.userData.root = gltf.scene.id;
-
-                        object.castShadow = true;
-                        object.receiveShadow = true;
-                        
-                    }
-                    object.userData.isTransient = true;
-                });
-
-                gltf.scene.userData.isTransient = true;
-
-                app.scene.add(gltf.scene);
-
-                app.camera.lookAt(gltf.scene.position);
-                app.controls.reset();
-
-                app.transients.push(gltf.scene);
-
-            },
-            // called while loading is progressing
-            function (xhr) {
-
-                var msg = (xhr.loaded / xhr.total * 100) + '% loaded';
-                app.status.innerHTML = msg;
-                console.log(msg);
-
-            },
-            // called when loading has errors
-            function (error) {
-
-                console.log('An error happened');
-
-            }
-        );
-
+        });
     }
 
 
