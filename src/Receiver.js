@@ -16,7 +16,7 @@ main();
 
 function main() {
 
-    const app = {
+    let app = {
 
         //Threejs
         renderer: null,
@@ -35,6 +35,9 @@ function main() {
         //app specific
         audioMap: {},
         imageMap: {},
+        audioCache: {},
+        imageCache: {},
+        modelCache: {},
         imageObj: null,
         gridObj: null,
         gridScale: 200.0,
@@ -83,7 +86,7 @@ function main() {
 
     function LoadModel(id, params) {
 
-        actions.loadModel(params, function(){
+        actions.loadModel(app, params, function(){
 
             console.log("post model load...");
 
@@ -93,58 +96,10 @@ function main() {
 
     function LoadSound(id, params) {
 
-        console.log("creating new audio at: " + params.src);
+        actions.loadSound(app, params, function(){
 
-        let track = new Pizzicato.Sound({
-            source: 'file',
-            options: {
-                path: params.src
-            }
-        }, function () {
+            console.log("post sound load...");
 
-            var stereoPanner = new Pizzicato.Effects.StereoPanner({
-                pan: parseFloat(params.pan)
-            });
-
-            var reverb = new Pizzicato.Effects.Reverb({
-                time: parseFloat(params.reverb),
-                decay: 0.2,
-                reverse: false,
-                mix: 0.5
-            });
-
-            var pingPongDelay = new Pizzicato.Effects.PingPongDelay({
-                feedback: 0.3,
-                time: 0.5,
-                mix: parseFloat(params.echo)
-            });
-
-            console.log('sound file loaded!');
-            track.addEffect(stereoPanner);
-            track.addEffect(reverb);
-            track.addEffect(pingPongDelay);
-            track.volume = parseFloat(params.volume);
-            track.loop = parseFloat(params.loop) < 0.5 ? false : true;
-            track.attack = parseFloat(params.fade_in);
-            track.release = parseFloat(params.fade_out);
-
-            app.audioMap[id] = params;
-            app.audioMap[id].media = track;
-            app.audioMap[id].effects[0] = stereoPanner;
-            app.audioMap[id].effects[1] = reverb;
-            app.audioMap[id].effects[2] = pingPongDelay;
-            app.audioMap[id].content_state = "ready";
-
-            //track stop
-            app.audioMap[id].media.on("stop", function () {
-                app.audioMap[id].content_state = "default";
-            });
-
-            //handle special case where sound needs to load and then play 
-            if (params.ui_state === "selected") {
-                app.audioMap[id].media.play();
-                app.audioMap[id].content_state = "playing";
-            }
         });
     }
 
@@ -318,8 +273,9 @@ function main() {
                     
                     console.log("building grid obj...");
                     
-                    app.gridScale = 10.0 * parseFloat(params.volume);
+                    app.gridScale = parseFloat(params.volume);
                     app.gridOpacity = parseFloat(params.reverb);
+                    app.shaderUniforms.u_grid_spacing.value = parseFloat(params.echo);
                     app.shaderUniforms.u_grid_scale.value = app.gridScale       
                     app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
 
@@ -761,7 +717,7 @@ function main() {
         app.debugParams = {
             p_grid_scale: 5.0,
             p_grid_alpha: 0.5,
-            p_grid_spacing: 0.47,
+            p_grid_spacing: 0.01,
             p_image_scale: 1.0,
             p_origin_x: 0.5,
             p_origin_y: 0.5,
