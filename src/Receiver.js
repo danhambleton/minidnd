@@ -11,6 +11,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as MapShaders from "./MapShaders.js";
 import { Actions } from "./Actions.js"
+import { HexGrid } from "./HexGrid.js"
 
 main();
 
@@ -64,14 +65,7 @@ function main() {
 
     const actions = new Actions();
 
-    /**
-     * Create the Peer object for our end of the connection.
-     *
-     * Sets up callbacks that handle any events related to our
-     * peer object.
-     */
-
-
+    const hexGrid = new HexGrid();
 
     function getUrlParam(name) {
         name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
@@ -503,7 +497,6 @@ function main() {
         // update the picking ray with the camera and screenPoint position
         raycaster.setFromCamera(app.mousePosition, app.camera);
 
-        var s = new THREE.Vector2(1.0, 1.7320508);
 
         // calculate objects intersecting the picking ray
         const intersects = raycaster.intersectObjects(app.scene.children);
@@ -517,11 +510,14 @@ function main() {
                     var r = 0.3 / app.gridScale;
 
                     var aspect = app.imageSize.y / app.imageSize.x;
-                    var offset = new THREE.Vector3(5.0, aspect * 5.0, 0.0);
-
-                    console.log(offset.x + " " + offset.y);
 
                     var np = intersects[i].point;
+
+                    var hp = hexGrid.HexCenterFromPoint(new THREE.Vector3(np.x, np.z, 0.0), app.gridScale);
+                    
+                    var z = hp.y;
+                    hp.y = np.y;
+                    hp.z = z;
 
                     var tokenObj = app.scene.getObjectByName(app.peer.id);
 
@@ -538,7 +534,7 @@ function main() {
 
                         console.log("token cloned:=");
                         tokenObj.name = app.peer.id;
-                        tokenObj.position.set(np.x, np.y, np.z);
+                        tokenObj.position.set(hp.x, hp.y, hp.z);
 
                         console.log("changing material colors");
                         tokenObj.traverse(function (object) {
@@ -563,7 +559,7 @@ function main() {
                     }
                     else {
                         console.log("have token object");
-                        //tokenObj.position.set(np.x, np.y, np.z);
+                        tokenObj.position.set(hp.x, hp.y, hp.z);
                     }
                 }
             }
