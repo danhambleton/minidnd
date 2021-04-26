@@ -1,7 +1,7 @@
 import Peer, * as peer from "peerjs"
 import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
-import { MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry, Vector3 } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
@@ -9,6 +9,8 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as MapShaders from "./MapShaders.js";
+import { HexGrid } from "./HexGrid.js"
+
 
 class Actions {
 
@@ -16,8 +18,7 @@ class Actions {
 
     }
 
-    loadModel(app, params, callback)
-    {
+    loadModel(app, params, callback) {
         // Instantiate a loader
         const loader = new GLTFLoader();
 
@@ -33,24 +34,22 @@ class Actions {
             // called when the resource is loaded
             function (gltf) {
 
-                var bbox = new THREE.Box3().setFromObject(gltf.scene);
+                // var bbox = new THREE.Box3().setFromObject(gltf.scene);
 
-                var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
-                var scaleFactor = (10.0 * parseFloat(params.volume) / app.gridScale ) / (baseDim);
-                gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                // var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
+                // var scaleFactor = (10.0 * parseFloat(params.volume) / app.gridScale) / (baseDim);
+                // gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-                var matCapMaterial = null
+                var matCapMaterial = null;
 
+
+               
 
                 gltf.scene.traverse(function (object) {
                     if (object.isMesh) {
 
-                        console.log(object.material);
-
-                        if(object.material.name === "matcap")
-                        {
-                            if(!matCapMaterial)
-                            {
+                        if (object.material.name === "matcap") {
+                            if (!matCapMaterial) {
                                 matCapMaterial = new THREE.MeshMatcapMaterial({
                                     matcap: object.material.map,
                                     color: 0xa3a3a3
@@ -59,8 +58,7 @@ class Actions {
 
                         }
 
-                        if(matCapMaterial)
-                        {
+                        if (matCapMaterial) {
                             object.material = matCapMaterial;
                         }
 
@@ -69,25 +67,11 @@ class Actions {
                         object.castShadow = true;
                         object.receiveShadow = true;
 
-                        
                     }
-                    object.userData.isTransient = true;
                 });
 
-                gltf.scene.userData.isTransient = true;
-                //gltf.scene.userData.owner = params.peerId;
-                // gltf.scene.name = nanoid(10);
-
-                // app.scene.add(gltf.scene);
-
-                // app.camera.lookAt(gltf.scene.position);
-                // app.controls.reset();
-
-                // app.transients.push(gltf.scene);
-
                 app.modelCache[params.src] = gltf.scene;
-
-                callback();
+                callback(params.src);
             },
             // called while loading is progressing
             function (xhr) {
@@ -106,8 +90,7 @@ class Actions {
         );
     }
 
-    loadImage(app, params, callback)
-    {
+    loadImage(app, params, callback) {
         // instantiate a loader
         var loader = new THREE.TextureLoader();
 
@@ -123,7 +106,7 @@ class Actions {
 
                 app.imageCache[params.src] = texture;
 
-                callback();
+                callback(texture);
             },
 
             // onProgress callback currently not supported
@@ -131,14 +114,13 @@ class Actions {
 
             // onError callback
             function (err) {
-                console.error('An error happened. Matcap.');
+                console.error('An error happened in image load.');
             }
         );
 
     }
 
-    loadSound(app, params, callback)
-    {
+    loadSound(app, params, callback) {
         console.log("creating new audio at: " + params.src);
 
         let track = new Pizzicato.Sound({
@@ -198,13 +180,27 @@ class Actions {
 
     updateSound(app, params) {
 
+        var id = params.id;
+        
+        app.audioMap[id].media.volume = parseFloat(params.volume);
+        app.audioMap[id].media.attack = parseFloat(params.fade_in);
+        app.audioMap[id].media.release = parseFloat(params.fade_out);
+        app.audioMap[id].effects[0].pan = parseFloat(params.pan);
+        app.audioMap[id].effects[1].time = parseFloat(params.reverb);
+        app.audioMap[id].effects[2].mix = parseFloat(params.echo);
+        app.audioMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
+
+        if (app.audioMap[id].content_state !== "playing") {
+            app.audioMap[id].media.play();
+            app.audioMap[id].content_state = "playing";
+        }
+
     }
 
-    addModelToScene(app, params)
-    {
+    addModelToScene(app, params) {
         var model = app.modeleCache[params.src];
 
-        if(model) {
+        if (model) {
             var obj = model.clone();
             app.scene.add(obj);
             //other params
@@ -214,11 +210,64 @@ class Actions {
         }
     }
 
-    updateModelTransform(app, params)
-    {
+    addPlayerTokenToScene(app, params, callback) {
+
+        if(!app.profileModel) {
+            console.log("profile model not set!");
+            return;
+        }
+
+        if(app.scene.getObjectByName(app.peer.id))
+        {
+            console.log("Token already added to scene!");
+            return;
+        }
+
+        var tokenObj = app.profileModel.clone();
+        tokenObj.position.set(0.0, 0.0, 0.0);
+        var bbox = new THREE.Box3().setFromObject(tokenObj);
+
+        var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
+        var scaleFactor = app.gridScale / baseDim;
+        tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+        var col = new THREE.Color(
+            "#" + app.profileColor
+        );
+
+        var matCapMaterial = new THREE.MeshMatcapMaterial({
+            matcap: app.matcaps.playerTokenMatcap,
+            color: col
+        });
+
+
+        console.log("token cloned:=");
+        tokenObj.name = app.peer.id;
+        tokenObj.position.set(0.0, 0.0, 0.0);
+
+        console.log("changing material colors");
+        tokenObj.traverse(function (object) {
+            if (object.isMesh) {
+
+                object.material = matCapMaterial;
+                object.material.needsUpdate = true;
+                object.userData.root = tokenObj.id;
+                object.castShadow = true;           
+            }
+        });
+
+        app.transients.push(tokenObj);
+        // tokenObj.userData.isTransient = true;
+        console.log("token adding to scene");
+        app.scene.add(tokenObj);
+
+        callback(tokenObj.id);
+    }
+
+    updateModelTransform(app, params) {
         var model = app.scene.getObjectByName(params.objectName);
 
-        if(model) {
+        if (model) {
             //set model transform
 
         }
@@ -227,19 +276,186 @@ class Actions {
         }
     }
 
-    sendActionToHost(app, action)
-    {
+    pickObjectInScene(app, hit){
+
+        var raycaster = new THREE.Raycaster();
+
+        // update the picking ray with the camera and screenPoint position
+        raycaster.setFromCamera(app.mousePosition, app.camera);
+
+        var s = new THREE.Vector2(1.0, 1.7320508);
+
+        // calculate objects intersecting the picking ray
+        const intersects = raycaster.intersectObjects(app.scene.children, true);
+
+        if (intersects.length > 0) {
+            for (let i = 0; i < intersects.length; i++) {
+
+                console.log(intersects[i].object.name);
+
+                if (intersects[i].object.name === "ImageObj" || intersects[i].object.name === "GridObj") {
+
+                    //app.scene.remove(app.transformControl);
+                    continue;
+                }
+
+                if (intersects[i].object.isMesh) {
+                    if (intersects[i].object.userData.root) {
+                        var rootObj = app.scene.getObjectById(intersects[i].object.userData.root);
+                        if (rootObj) {
+                            //otherwise attach the transform control
+                            app.scene.remove(app.transformControl);
+                            app.transformControl.attach(rootObj);
+                            app.scene.add(app.transformControl);
+
+                            app.activeObj = rootObj;
+                            app.activeObj.name = rootObj.name;
+
+                            console.log("active obj: " + rootObj.name);
+
+                            hit = intersects[i];
+                            
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        else{
+            app.scene.remove(app.transformControl);
+        }
+
+        return false;
+    }
+
+    pickHexGridPoint(app, callback) {
+
+        var raycaster = new THREE.Raycaster();
+
+        // update the picking ray with the camera and screenPoint position
+        raycaster.setFromCamera(app.mousePosition, app.camera);
+        
+        // calculate objects intersecting the picking ray
+        const intersects = raycaster.intersectObjects(app.scene.children);
+
+        var validHit = false;
+        var hp = new THREE.Vector3(0.0, 0.0, 0.0);
+
+        if (intersects.length > 0) {
+            for (let i = 0; i < intersects.length; i++) {
+
+                //TODO: place token
+                if (intersects[i].object.name === "GridObj") {
+                    var np = intersects[i].point;
+                    var hg = new HexGrid();
+                    hp = hg.HexCenterFromPoint(new THREE.Vector3(np.x, np.z, 0.0), app.gridScale);
+
+                    callback(hp);
+
+                }
+            }
+        }
+    }
+
+    sendActionToHost(app, action) {
 
     }
 
-    sendActionToPeers(app, action)
-    {
+    removeTransients(app) {
+        app.transformControl.detach();
 
+        try {
+
+            for (const obj of app.transients) {
+                app.scene.remove(obj);
+            }
+
+
+        }
+        catch (err) {
+
+        }
+
+        app.transients = [];
     }
 
+    buildMapScene(app, params) {
+        this.removeTransients(app);
 
+        this.loadImage(app, params, function (texture) {
 
+            app.imageSize = new THREE.Vector2(texture.image.width, texture.image.height);
+            var aspect = app.imageSize.y / app.imageSize.x;
 
+            app.imageObj = new THREE.Mesh(
+                new THREE.PlaneGeometry(10.0, aspect * 10.0),
+                new THREE.MeshLambertMaterial({
+                    map: texture,
+                    depthTest: true,
+                    depthWrite: true
+                })
+            );
+
+            app.transients.push(app.imageObj);
+
+            app.imageObj.name = "ImageObj";
+            app.imageObj.position.setZ(0.0);
+            app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
+            app.imageObj.receiveShadow = true;
+            app.scene.add(app.imageObj);
+
+            app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
+            app.camera.position.set(0.0, 3.0, 0.0);
+            app.camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
+
+            app.controls.reset();
+
+            app.scene.remove(app.scene.getObjectByName("GridObj"));
+
+            app.shaderUniforms.u_image_dims.value = app.imageSize;
+
+            console.log(params);
+
+            if (parseFloat(params.loop) > 0.5) {
+
+                console.log("building grid obj...");
+
+                app.gridScale = parseFloat(params.volume);
+                app.gridOpacity = parseFloat(params.reverb);
+                app.shaderUniforms.u_grid_spacing.value = parseFloat(params.echo);
+                app.shaderUniforms.u_grid_scale.value = app.gridScale
+                app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
+
+                app.gridObj = new THREE.Mesh(
+                    new THREE.PlaneGeometry(10.0, aspect * 10.0),
+                    new THREE.ShaderMaterial({
+                        vertexShader: MapShaders.buildMapVertexShader(),
+                        fragmentShader: MapShaders.buildMapFragmentShader(),
+                        blending: THREE.NormalBlending,
+                        transparent: true,
+                        uniforms: app.shaderUniforms,
+                        fog: true
+                    })
+                );
+                app.transients.push(app.gridObj);
+
+                app.gridObj.position.set(0.0, 0.01, 0.0);
+                app.gridObj.name = "GridObj";
+                app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
+
+                app.gridObj.receiveShadow = true;
+
+                app.scene.add(app.gridObj);
+            }
+
+            app.renderer.render(app.scene, app.camera);
+
+        });
+    }
+
+    sendActionToPeers(app, action) {
+
+    }
 }
 
 export {

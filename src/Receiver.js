@@ -99,256 +99,27 @@ function main() {
 
     function PreLoad() {
 
-
-        // instantiate a loader
-        var loader = new THREE.TextureLoader();
-
-        console.log("loading matcap...");
-
-        // load a resource
-        loader.load(
-
-            'https://danbleton.nyc3.digitaloceanspaces.com/public/matcaps/512/B5BBB5_3B4026_6E745D_5C6147-512px.png',
-
-            // onLoad callback
-            function (texture) {
-
+        actions.loadImage(
+            app, 
+            { src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/matcaps/512/B5BBB5_3B4026_6E745D_5C6147-512px.png' },
+            function(texture){
                 app.matcaps.playerTokenMatcap = texture;
                 console.log("Matcap created...");
+            });
 
-            },
+        actions.loadModel(app,
+            {src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb'},
+            function(assetId){
 
-            // onProgress callback currently not supported
-            undefined,
+                app.profileModel = app.modelCache[assetId];
 
-            // onError callback
-            function (err) {
-                console.error('An error happened. Matcap.');
-            }
-        );
-
-        // Instantiate a loader
-        const gltfLoader = new GLTFLoader();
-
-        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
-        // const dracoLoader = new DRACOLoader();
-        // dracoLoader.setDecoderPath('/examples/js/libs/draco/');
-        // loader.setDRACOLoader(dracoLoader);
-
-        // Load a glTF resource
-        gltfLoader.load(
-            // resource URL
-            'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb',
-            // called when the resource is loaded
-            function (gltf) {
-
-                var bbox = new THREE.Box3().setFromObject(gltf.scene);
-
-                var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
-                var scaleFactor = (0.9 / app.gridScale) / (baseDim);
-                gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-                //bbox = new THREE.Box3().setFromObject(gltf.scene);
-
-                // console.log(gltf.scene.textures);
-
-                // var matCapTex = gltf.scene.textures[0];
-
-                // if(!matCapTex)
-                //     matCapTex = app.matcaps.playerTokenMatcap;
-
-                var matCapMaterial = new THREE.MeshMatcapMaterial({
-                    matcap: app.matcaps.playerTokenMatcap,
-                    color: 0xa3a3a3
-                });
-
-                gltf.scene.traverse(function (object) {
-
-                    if (object.isMesh) {
-                        
-                        object.material = matCapMaterial;
-                        object.material.needsUpdate = true;
-
-                    }
-
-                });
-
-                app.profileModel = gltf.scene;
-                //app.scene.add(app.profileModel);
-            },
-            // called while loading is progressing
-            function (xhr) {
-
-                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-
-            },
-            // called when loading has errors
-            function (error) {
-
-                console.log('An error happened');
-
-            }
-        );
-    }
-
-    function LoadImage(id, params) {
-        // instantiate a loader
-        var loader = new THREE.TextureLoader();
-
-        console.log("loading image...");
-
-        app.transformControl.detach();
-
-        //TODO: remove all objects excpet the camera?
-        try {
-            // app.scene.traverse( function ( object ) {
-            //     if ( object.userData.isTransient) {
-            //         app.scene.remove(object);
-            //     }
-            // });
-
-            for(const obj of app.transients)
-            {
-                app.scene.remove(obj);
-            }
-
-            
-        }
-        catch(err)
-        {
-
-        }
-
-
-        // load a resource
-        loader.load(
-            // resource URL
-            //'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
-
-            params.src,
-
-            // onLoad callback
-            function (texture) {
-
-                app.scene.remove(app.scene.getObjectByName("ImageObj"));
-
-                app.imageSize = new THREE.Vector2(texture.image.width, texture.image.height);
-                var aspect = app.imageSize.y / app.imageSize.x;
-
-                app.imageObj = new THREE.Mesh(
-                    new THREE.PlaneGeometry(10.0, aspect * 10.0),
-                    new THREE.MeshLambertMaterial({
-                        map: texture,
-                        depthTest: true,
-                        depthWrite: true
-                    })
-                );
-
-                app.imageObj.name = "ImageObj";
-                app.imageObj.position.setZ(0.0);
-                app.imageObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
-                app.imageObj.receiveShadow = true;
-                app.scene.add(app.imageObj);
-
-                app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
-                app.camera.position.set(0.0, 3.0, 0.0);
-                app.camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
-
-                app.controls.reset();
-
-                app.scene.remove(app.scene.getObjectByName("GridObj"));
-
-                app.shaderUniforms.u_image_dims.value = app.imageSize;
-
-                console.log(params);
-
-                if(parseFloat(params.loop) > 0.5)
+                if(app.profileModel)
                 {
-                    
-                    console.log("building grid obj...");
-                    
-                    app.gridScale = parseFloat(params.volume);
-                    app.gridOpacity = parseFloat(params.reverb);
-                    app.shaderUniforms.u_grid_spacing.value = parseFloat(params.echo);
-                    app.shaderUniforms.u_grid_scale.value = app.gridScale       
-                    app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
-
-                    app.gridObj = new THREE.Mesh(
-                        new THREE.PlaneGeometry(10.0, aspect * 10.0),
-                        new THREE.ShaderMaterial({
-                            vertexShader: MapShaders.buildMapVertexShader(),
-                            fragmentShader: MapShaders.buildMapFragmentShader(),
-                            blending: THREE.NormalBlending,
-                            transparent: true,
-                            uniforms: app.shaderUniforms,
-                            fog: true
-                        })
-                    );
-                    app.gridObj.position.set(0.0, 0.01, 0.0);
-                    app.gridObj.name = "GridObj";
-                    app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
-
-                    app.gridObj.receiveShadow = true;
-
-                    app.scene.add(app.gridObj);
+                    console.log("loaded model with children: " + app.profileModel.children.length)
                 }
 
-                //recenter camera
-                //app.camera.position.set(0, 2, 0);
-
-                app.renderer.render(app.scene, app.camera);
-            },
-
-            // onProgress callback currently not supported
-            undefined,
-
-            // onError callback
-            function (err) {
-                console.error('An error happened.');
-            }
-        );
-    }
-
-    function getHex(p) {
-
-        var s = new THREE.Vector2(1.0, 1.7320508);
-
-        var aspect = app.imageSize.y / app.imageSize.x;
-        var uv = new THREE.Vector2(-5.0 + 10.0 * p.x, aspect * (-5.0 + 10.0 * p.y));
-
-        //u_grid_scale * u + s.yx / 2.
-        //var sp = new THREE.Vector2(app.gridScale * uv.x + s.y * 0.5, app.gridScale * uv.y + s.x * 0.5);
-        var sp = new THREE.Vector2(app.gridScale * uv.x, app.gridScale * uv.y);
-
-        // vec4 hC = floor(vec4(p, p - vec2(.5, 1)) / s.xyxy) + .5;  
-        var hcx = Math.floor(sp.x / s.x) + 0.5;
-        var hcy = Math.floor(sp.y / s.y) + 0.5;
-        var hcz = Math.floor((sp.x - 0.5) / s.x) + 0.5;
-        var hcw = Math.floor((sp.y - 1.0) / s.y) + 0.5;
-
-        var hC = new THREE.Vector4(hcx, hcy, hcz, hcw);
-
-        // Centering the coordinates- with the hexagon centers above.
-        //var h = vec4(p - hC.xy * s, p - (hC.zw + .5) * s);
-        var h = new THREE.Vector4(
-            sp.x - hC.x * s.x,
-            sp.y - hC.y * s.y,
-            sp.x - (hC.z + 0.5) * s.x,
-            sp.y - (hC.w + 0.5) * s.y
-        );
-
-
-        var h1 = new THREE.Vector2(h.x, h.y);
-        var h2 = new THREE.Vector2(h.z, h.w);
-
-        if (h1.lengthSq() < h2.lengthSq()) {
-            return new THREE.Vector4(h.x, h.y, hC.x, hC.y);
-        }
-        else {
-            return new THREE.Vector4(h.z, h.w, hC.z + 0.5, hC.w + 0.5);
-        }
-
-        //   return dot(h.xy, h.xy) < dot(h.zw, h.zw) ? vec4(h.xy, hC.xy) : vec4(h.zw, hC.zw + .5);
+                //scale?
+            });
     }
 
     function PlacePeerToken(id, params) {
@@ -436,151 +207,12 @@ function main() {
         app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
         app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
 
-        var raycaster = new THREE.Raycaster();
-
-        // update the picking ray with the camera and screenPoint position
-        raycaster.setFromCamera(app.mousePosition, app.camera);
-
-        var s = new THREE.Vector2(1.0, 1.7320508);
-
-        // calculate objects intersecting the picking ray
-        const intersects = raycaster.intersectObjects(app.scene.children, true);
-
-        if (intersects.length > 0) {
-            for (let i = 0; i < intersects.length; i++) {
-
-                console.log(intersects[i].object.name);
-
-                if (intersects[i].object.name === "ImageObj" || intersects[i].object.name === "GridObj") {
-
-                    //app.scene.remove(app.transformControl);
-                    continue;
-                }
-
-                if (intersects[i].object.isMesh) {
-
-
-                    if (intersects[i].object.userData.root) {
-                        var rootObj = app.scene.getObjectById(intersects[i].object.userData.root);
-
-                        if (rootObj) {
-                            //otherwise attach the transform control
-                            app.scene.remove(app.transformControl);
-                            app.transformControl.attach(rootObj);
-                            app.scene.add(app.transformControl);
-
-                            app.activeObj = rootObj;
-                            app.activeObj.name = rootObj.name;
-
-                            console.log("active obj: " + rootObj.name);
-                        }
-                    }
-
-                }
-
-            }
-        }
-        else{
-            app.scene.remove(app.transformControl);
-        }
+        actions.pickObjectInScene(app, {});
 
     }
 
     function PlaceToken(id, params, event) {
 
-        //var screenPoint = new THREE.Vector2(0,0);
-        app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
-        app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
-
-        var raycaster = new THREE.Raycaster();
-
-        // update the picking ray with the camera and screenPoint position
-        raycaster.setFromCamera(app.mousePosition, app.camera);
-
-
-        // calculate objects intersecting the picking ray
-        const intersects = raycaster.intersectObjects(app.scene.children);
-
-        if (intersects.length > 0) {
-            for (let i = 0; i < intersects.length; i++) {
-
-                //TODO: place token
-                if (intersects[i].object.name === "GridObj") {
-
-                    var r = 0.3 / app.gridScale;
-
-                    var aspect = app.imageSize.y / app.imageSize.x;
-
-                    var np = intersects[i].point;
-
-                    var hp = hexGrid.HexCenterFromPoint(new THREE.Vector3(np.x, np.z, 0.0), app.gridScale);
-                    
-                    var z = hp.y;
-                    hp.y = np.y;
-                    hp.z = z;
-
-                    var tokenObj = app.scene.getObjectByName(app.peer.id);
-
-                    if (!tokenObj) {
-                        console.log("creating token object");
-                        tokenObj = app.profileModel.clone();
-
-                        var col = new THREE.Color(
-                            "#" + app.profileColor
-                        );
-
-                        // tokenObj.material.color.set(col);
-                        // tokenObj.material.needsUpdate = true;
-
-                        console.log("token cloned:=");
-                        tokenObj.name = app.peer.id;
-                        tokenObj.position.set(hp.x, hp.y, hp.z);
-
-                        console.log("changing material colors");
-                        tokenObj.traverse(function (object) {
-                            if (object.isMesh) {
-
-                                object.material.color.set(col);
-                                object.material.needsUpdate = true;
-                                object.userData.root = tokenObj.id;
-                                object.castShadow = true;
-                                object.receiveShadow = true;
-                                
-                                
-                            }
-                            object.userData.isTransient = true;
-                        });
-                        app.transients.push(tokenObj);
-                        tokenObj.userData.isTransient = true;
-                        console.log("token adding to scene");
-                        app.scene.add(tokenObj);
-
-
-                    }
-                    else {
-                        console.log("have token object");
-                        tokenObj.position.set(hp.x, hp.y, hp.z);
-                    }
-                }
-            }
-        }
-
-    }
-
-    function UpdateSound(id, params) {
-
-        app.audioMap[id].media.volume = parseFloat(params.volume);
-        app.audioMap[id].media.attack = parseFloat(params.fade_in);
-        app.audioMap[id].media.release = parseFloat(params.fade_out);
-        app.audioMap[id].effects[0].pan = parseFloat(params.pan);
-        app.audioMap[id].effects[1].time = parseFloat(params.reverb);
-        app.audioMap[id].effects[2].mix = parseFloat(params.echo);
-        app.audioMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
-
-        if (app.audioMap[id].content_state !== "playing") {
-            app.audioMap[id].media.play();
-            app.audioMap[id].content_state = "playing";
-        }
 
     }
 
@@ -645,8 +277,8 @@ function main() {
 
         //create threejs scene
         app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
-        app.gridScale = 5.0;
-        app.gridOpacity = 0.55;
+        app.gridScale = 0.25;
+        app.gridOpacity = 0.75;
         app.imageSize = new THREE.Vector2(1920, 1080);
 
         //init threejs
@@ -817,40 +449,59 @@ function main() {
         app.playerContent.addEventListener("dblclick", function (event) {
 
             console.log("in event");
-            //LoadImage(null, null);
 
-            PlaceToken(null, null, event);
+            app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
+            app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
+
+            actions.pickHexGridPoint(app, function(hp) {
+                
+                console.log("hex point: " + hp.x + ", " + hp.y + ", " + hp.z);
+                actions.addPlayerTokenToScene(app, {}, function(id){
+                    console.log("id: " + id);
+                    var obj = app.scene.getObjectById(id);
+                    console.log("obj: " + obj.id);
+                    obj.position.set(hp.x, 0.0, hp.y);
+                    
+                });
+
+            });
+
+
             render();
 
             //LoadSound(null, null, event);
 
             //send message to host
-            if (app.connection && app.connection.open) {
+            // if (app.connection && app.connection.open) {
 
-                var tokenParams = {
-                    peer: app.peer.id,
-                    obj_name: app.activeObj.name,
-                    position: app.activeObj.position,
-                    scale: app.activeObj.scale,
-                    rotation: app.activeObj.rotation,
-                    color: app.profileColor
-                }
+            //     var tokenParams = {
+            //         peer: app.peer.id,
+            //         obj_name: app.activeObj.name,
+            //         position: app.activeObj.position,
+            //         scale: app.activeObj.scale,
+            //         rotation: app.activeObj.rotation,
+            //         color: app.profileColor
+            //     }
 
-                console.log(tokenParams);
+            //     console.log(tokenParams);
 
-                var cue = {
-                    type: "token",
-                    body: JSON.stringify(tokenParams)
-                }
+            //     var cue = {
+            //         type: "token",
+            //         body: JSON.stringify(tokenParams)
+            //     }
 
-                app.connection.send(cue);
-            }
+            //     app.connection.send(cue);
+            // }
 
-            render();
+            // render();
 
         });
 
-        LoadImage(null, { src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/cofg.png' });
+        actions.buildMapScene(app, 
+            { src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/GoodMead.png', 
+            loop: 1.0,
+            volume: 0.25,
+            reverb: 0.75 });
 
         PreLoad();
 
