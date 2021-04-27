@@ -411,7 +411,7 @@ class Actions {
             var aspect = app.imageSize.y / app.imageSize.x;
 
             app.imageObj = new THREE.Mesh(
-                new THREE.PlaneGeometry(10.0, aspect * 10.0),
+                new THREE.PlaneGeometry(app.mapWidth, aspect * app.mapWidth),
                 new THREE.MeshLambertMaterial({
                     map: texture,
                     depthTest: true,
@@ -428,7 +428,7 @@ class Actions {
             app.scene.add(app.imageObj);
 
             app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
-            app.camera.position.set(0.0, 3.0, 0.0);
+            app.camera.position.set(0.0, 10.0, 0.0);
             app.camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
 
             app.controls.reset();
@@ -450,7 +450,7 @@ class Actions {
                 app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
 
                 app.gridObj = new THREE.Mesh(
-                    new THREE.PlaneGeometry(10.0, aspect * 10.0),
+                    new THREE.PlaneGeometry(app.mapWidth, aspect * app.mapWidth),
                     new THREE.ShaderMaterial({
                         vertexShader: MapShaders.buildMapVertexShader(),
                         fragmentShader: MapShaders.buildMapFragmentShader(),

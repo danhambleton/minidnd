@@ -1,4 +1,5 @@
 varying vec2 vUv;
+varying vec4 worldCoord;
 
 uniform float u_grid_scale;
 uniform float u_grid_alpha;
@@ -72,10 +73,10 @@ vec3 hex_to_coord(vec3 h)
 void main() {
 
 // Aspect correct screen coordinates.
-  float screen_aspect = u_image_dims.y / u_image_dims.x;
-  vec2 u = vec2(vUv.x, screen_aspect * vUv.y);
+//   float screen_aspect = u_image_dims.y / u_image_dims.x;
+//   vec2 u = vec2(vUv.x, screen_aspect * vUv.y);
 
-  vec2 wu = vec2(-5.0 + 10.0 * vUv.x, screen_aspect * (-5.0 + 10.0 * vUv.y));
+  vec2 wu = vec2(worldCoord.x, worldCoord.z);
 
   vec3 hex_coord = coord_to_hex(vec3(wu, 0.0));
   vec3 nearest_hex_center = hex_round(hex_coord);
@@ -95,6 +96,8 @@ void main() {
   vec4 col = mix(col_inside, col_outside, step(0.0, sd));
   float dist_change = fwidth(sd) * 0.5;
 
+  float distToCamera = length(vec2(cameraPosition.x, cameraPosition.z - 0.5) - center_coord.xy);
+
     // Major contour lines
   {
     float spacing = u_contour_spacing;
@@ -107,6 +110,10 @@ void main() {
 
   // Initiate the background to a white color, putting in some dark borders.
   vec4 hexCol = col;//mix(vec4(1., 1., 1., u_grid_alpha), vec4(1., 1., 1., 0.), step(0.0, u_grid_spacing, sd)); 
+
+
+    hexCol = mix(hexCol, vec4(0.0, 0.0, 0.0, 1.0), distToCamera - 0.25);
+
 
 
   #ifdef USE_FOG

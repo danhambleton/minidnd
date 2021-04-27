@@ -52,6 +52,7 @@ function main() {
         activeObj: null,
         transients: [],
         keyMap: {},
+        mapWidth: 5.0,
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -240,7 +241,7 @@ function main() {
                 app.camera.aspect = canvas.clientWidth / canvas.clientHeight;
                 app.camera.updateProjectionMatrix();
             }
-
+            console.log(app.camera.zoom);
             app.renderer.render(app.scene, app.camera);
         }
         render();
@@ -265,8 +266,6 @@ function main() {
             e = e || event; // to deal with IE
             app.keyMap[e.keyCode] = e.type == 'keydown';
             /* insert conditional here */
-
-            console.log(e.keyCode);
 
             if(app.keyMap[81])
             {
@@ -310,9 +309,7 @@ function main() {
 
         app.transformControl = new TransformControls(app.camera, app.renderer.domElement);
         app.transformControl.setSize(2.0);
-
         app.transformControl.addEventListener('change', render);
-
         app.transformControl.addEventListener('dragging-changed', function (event) {
 
             app.controls.enabled = !event.value;
@@ -402,7 +399,7 @@ function main() {
 
         actions.buildMapScene(app,
             {
-                src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/GoodMead.png',
+                src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
                 loop: 1.0,
                 volume: 0.04,
                 reverb: 0.75,

@@ -54,8 +54,9 @@ class ThreeHelper {
          app.scene.add( ambLight );
  
  
-         app.camera = new THREE.PerspectiveCamera(60, app.clientSize.x / app.clientSize.y, 0.1, 100);
-         // app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
+         app.camera = new THREE.PerspectiveCamera(45, app.clientSize.x / app.clientSize.y, 0.1, 100);
+         var aspect = app.clientSize.y / app.clientSize.x;
+        //  app.camera = new THREE.OrthographicCamera(-5.0, 5.0, aspect * 5.0, aspect * -5.0, 0.0, 100.0);
          app.camera.name = "MainCamera";
          app.renderer = new THREE.WebGLRenderer({antialias: true});
          app.renderer.shadowMap.enabled = true;
@@ -72,14 +73,15 @@ class ThreeHelper {
          app.controls.enableDamping = true;
          app.controls.dampingFactor = 0.05;
          app.controls.screenSpacePanning = false;
-         app.controls.minDistance = 0.2;
-         app.controls.maxDistance = 1.0;
+         app.controls.minDistance = 0.5;
+         app.controls.maxDistance = 3.0;
          app.controls.maxPolarAngle = Math.PI / 6;
          app.controls.maxAzimuthAngle = 0.0;
          app.controls.minAzimuthAngle = 0.0;
          app.controls.zoomSpeed = 0.5;
+         
  
-         app.camera.position.set(0, 2, 0);
+         app.camera.position.set(0, 10, 0);
          app.camera.lookAt(0.0, 0.0, 0.0);
  
          app.controls.update();
