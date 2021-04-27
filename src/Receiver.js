@@ -12,6 +12,8 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import * as MapShaders from "./MapShaders.js";
 import { Actions } from "./Actions.js"
 import { HexGrid } from "./HexGrid.js"
+import { PeerHelper } from "./PeerHelper.js"
+import { ThreeHelper } from "./ThreeHelper.js";
 
 main();
 
@@ -41,7 +43,7 @@ function main() {
         modelCache: {},
         imageObj: null,
         gridObj: null,
-        gridScale: 200.0,
+        gridScale: 0.025,
         gridOpacity: 0.75,
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
@@ -49,6 +51,7 @@ function main() {
         profileModel: null,
         activeObj: null,
         transients: [],
+        keyMap: {},
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -80,7 +83,7 @@ function main() {
 
     function LoadModel(id, params) {
 
-        actions.loadModel(app, params, function(){
+        actions.loadModel(app, params, function () {
 
             console.log("post model load...");
 
@@ -90,7 +93,7 @@ function main() {
 
     function LoadSound(id, params) {
 
-        actions.loadSound(app, params, function(){
+        actions.loadSound(app, params, function () {
 
             console.log("post sound load...");
 
@@ -100,21 +103,20 @@ function main() {
     function PreLoad() {
 
         actions.loadImage(
-            app, 
+            app,
             { src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/matcaps/512/B5BBB5_3B4026_6E745D_5C6147-512px.png' },
-            function(texture){
+            function (texture) {
                 app.matcaps.playerTokenMatcap = texture;
                 console.log("Matcap created...");
             });
 
         actions.loadModel(app,
-            {src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb'},
-            function(assetId){
+            { src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb' },
+            function (assetId) {
 
                 app.profileModel = app.modelCache[assetId];
 
-                if(app.profileModel)
-                {
+                if (app.profileModel) {
                     console.log("loaded model with children: " + app.profileModel.children.length)
                 }
 
@@ -179,7 +181,7 @@ function main() {
                     object.userData.root = tokenObj.id;
                     object.castShadow = true;
                     object.receiveShadow = true;
-                    
+
                 }
                 object.userData.isTransient = true;
             });
@@ -211,160 +213,13 @@ function main() {
 
     }
 
-    function PlaceToken(id, params, event) {
-
-
-    }
-
     function initialize() {
 
-        // Create own peer object with connection to shared PeerJS server
-        app.peer = new Peer(null, {
-            host: process.env.PEERJS_SERVER,
-            path: '/',
-            secure: true,
-            debug: 2
-        });
+        var peerHelper = new PeerHelper();
+        peerHelper.initAsHost(app, process.env.PEERJS_SERVER);
 
-        app.peer.on('open', function (id) {
-            // Workaround for peer.reconnect deleting previous id
-            if (app.peer.id === null) {
-                console.log('Received null id from peer open');
-                app.peer.id = app.lastPeerId;
-            } else {
-                app.lastPeerId = app.peer.id;
-            }
-
-            console.log('ID: ' + app.peer.id);
-            app.recvId.innerHTML = "ID: " + app.peer.id;
-            app.status.innerHTML = "Awaiting connection...";
-        });
-        app.peer.on('connection', function (c) {
-
-            // Allow only a single connection
-            if (app.connection && app.connection.open) {
-                c.on('open', function () {
-                    c.send("Already connected to another client");
-                    setTimeout(function () { c.close(); }, 500);
-                });
-                return;
-            }
-
-            app.connection = c;
-            console.log("Connected to: " + app.connection.peer);
-            app.status.innerHTML = "Connected";
-            ready();
-
-        });
-        app.peer.on('disconnected', function () {
-            app.status.innerHTML = "Connection lost. Please reconnect";
-            console.log('Connection lost. Please reconnect');
-
-            // Workaround for peer.reconnect deleting previous id
-            app.peer.id = app.lastPeerId;
-            app.peer._lastServerId = app.lastPeerId;
-            app.peer.reconnect();
-        });
-        app.peer.on('close', function () {
-            app.connection = null;
-            app.status.innerHTML = "Connection destroyed. Please refresh";
-            console.log('Connection destroyed');
-        });
-        app.peer.on('error', function (err) {
-            console.log(err);
-            alert('' + err);
-        });
-
-        //create threejs scene
-        app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
-        app.gridScale = 0.25;
-        app.gridOpacity = 0.75;
-        app.imageSize = new THREE.Vector2(1920, 1080);
-
-        //init threejs
-        app.scene = new THREE.Scene();
-
-        const light = new THREE.DirectionalLight( new THREE.Color(0.7, 0.7, 0.7), 1 );
-        light.position.set( 0, 100, 0 );
-        light.position.multiplyScalar( 1.3 );
-        //light.lookAt(new Vector3(0.0, 0.0, 0.0));
-
-        light.castShadow = true;
-
-        light.shadow.mapSize.width = 1024;
-        light.shadow.mapSize.height = 1024;
-
-        const d = 10;
-
-        light.shadow.camera.left = - d;
-        light.shadow.camera.right = d;
-        light.shadow.camera.top = d;
-        light.shadow.camera.bottom = - d;
-
-        light.shadow.camera.far = 200;
-
-        app.scene.add(light);
-
-        const near = 2;
-        const far = 5;
-        const color = 'black';
-        app.scene.fog = new THREE.Fog(color, near, far);
-        app.scene.background = new THREE.Color(color);
-
-        const ambLight = new THREE.AmbientLight( 0x404040 ); // soft white light
-        app.scene.add( ambLight );
-
-
-        app.camera = new THREE.PerspectiveCamera(60, app.clientSize.x / app.clientSize.y, 0.1, 100);
-        // app.camera = new THREE.OrthographicCamera(-5.0, 5.0, 2.5, -2.5, 0.0, 100.0);
-        app.camera.name = "MainCamera";
-        app.renderer = new THREE.WebGLRenderer({antialias: true});
-        app.renderer.shadowMap.enabled = true;
-        app.renderer.shadowMapSoft = true;
-        app.renderer.gammaOutput = true;
-        app.renderer.gammaFactor = 1.5;
-        app.renderer.setSize(app.clientSize.x, app.clientSize.y);
-        app.playerContent.appendChild(app.renderer.domElement);
-
-        //orbit controls
-        app.controls = new MapControls(app.camera, app.renderer.domElement);
-
-        app.controls.enableDamping = true;
-        app.controls.dampingFactor = 0.05;
-        app.controls.screenSpacePanning = false;
-        app.controls.minDistance = 1.0;
-        app.controls.maxDistance = 10.0;
-        app.controls.maxPolarAngle = Math.PI / 3;
-
-        app.camera.position.set(0, 2, 0);
-        app.camera.lookAt(0.0, 0.0, 0.0);
-
-        app.controls.update();
-
-        //hex grid plane
-        app.debugParams = {
-            p_grid_scale: 5.0,
-            p_grid_alpha: 0.5,
-            p_grid_spacing: 0.01,
-            p_image_scale: 1.0,
-            p_origin_x: 0.5,
-            p_origin_y: 0.5,
-            p_grid_rot_x: 0.0,
-            p_grid_rot_y: 0.0,
-            p_grid_rot_z: 0.0,
-            p_grid_pos_y: 0.0,
-        }
-
-        app.shaderUniforms = {
-            //baseMap: { type: "t", value: texture }, //fog texture??
-            u_grid_scale: { value: app.gridScale },
-            u_grid_alpha: { value: app.gridOpacity },
-            u_grid_spacing: { value: app.debugParams.p_grid_spacing },
-            u_image_dims: { value: app.imageSize },
-            fogColor:    { type: "c", value: app.scene.fog.color },
-            fogNear:     { type: "f", value: app.scene.fog.near },
-            fogFar:      { type: "f", value: app.scene.fog.far }
-        }
+        var threeHelper = new ThreeHelper();
+        threeHelper.initScene(app);
 
 
         function resizeRendererToDisplaySize() {
@@ -391,7 +246,7 @@ function main() {
         render();
 
         app.controls.addEventListener('change', render);
-        window.addEventListener('resize', function(){
+        window.addEventListener('resize', function () {
 
 
             app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
@@ -400,13 +255,61 @@ function main() {
             app.camera.aspect = app.clientSize.x / app.clientSize.y;
             app.renderer.setSize(app.clientSize.x, app.clientSize.y);
             app.camera.updateProjectionMatrix();
-            
+
             console.log("updating window size");
             render();
 
         });
 
+        onkeydown = onkeyup = function(e){
+            e = e || event; // to deal with IE
+            app.keyMap[e.keyCode] = e.type == 'keydown';
+            /* insert conditional here */
+
+            console.log(e.keyCode);
+
+            if(app.keyMap[81])
+            {
+                //move hex +y
+                actions.movePlayerToNextHex(app, new THREE.Vector3(-1.0, 1.0, 0.0));
+
+            }
+            if(app.keyMap[87])
+            {
+                //move hex -z
+                actions.movePlayerToNextHex(app, new THREE.Vector3(0.0, 1.0, -1.0));
+                
+            }
+            if(app.keyMap[69])
+            {
+                //move hex +x
+                actions.movePlayerToNextHex(app, new THREE.Vector3(1.0, 0.0, -1.0));
+                
+            }
+            if(app.keyMap[65])
+            {
+                //move hex -x
+                actions.movePlayerToNextHex(app, new THREE.Vector3(-1.0, 0.0, 1.0));
+                
+            }
+            if(app.keyMap[83])
+            {
+                //move hex +z
+                actions.movePlayerToNextHex(app, new THREE.Vector3(0.0, -1.0, 1.0));
+                
+            }
+            if(app.keyMap[68])
+            {
+                //move hex -y
+                actions.movePlayerToNextHex(app, new THREE.Vector3(1.0, -1.0, 0.0));
+                
+            }
+
+            render();
+        }
+
         app.transformControl = new TransformControls(app.camera, app.renderer.domElement);
+        app.transformControl.setSize(2.0);
 
         app.transformControl.addEventListener('change', render);
 
@@ -453,15 +356,15 @@ function main() {
             app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
             app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
 
-            actions.pickHexGridPoint(app, function(hp) {
-                
+            actions.pickHexGridPoint(app, function (hp) {
+
                 console.log("hex point: " + hp.x + ", " + hp.y + ", " + hp.z);
-                actions.addPlayerTokenToScene(app, {}, function(id){
+                actions.addPlayerTokenToScene(app, {}, function (id) {
                     console.log("id: " + id);
                     var obj = app.scene.getObjectById(id);
                     console.log("obj: " + obj.id);
                     obj.position.set(hp.x, 0.0, hp.y);
-                    
+
                 });
 
             });
@@ -497,11 +400,14 @@ function main() {
 
         });
 
-        actions.buildMapScene(app, 
-            { src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/GoodMead.png', 
-            loop: 1.0,
-            volume: 0.25,
-            reverb: 0.75 });
+        actions.buildMapScene(app,
+            {
+                src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/GoodMead.png',
+                loop: 1.0,
+                volume: 0.04,
+                reverb: 0.75,
+                echo: 0.15
+            });
 
         PreLoad();
 

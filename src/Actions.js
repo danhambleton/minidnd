@@ -228,7 +228,7 @@ class Actions {
         var bbox = new THREE.Box3().setFromObject(tokenObj);
 
         var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
-        var scaleFactor = app.gridScale / baseDim;
+        var scaleFactor = 1.75 * app.gridScale / baseDim;
         tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
         var col = new THREE.Color(
@@ -357,6 +357,29 @@ class Actions {
         }
     }
 
+    movePlayerToNextHex(app, move) {
+
+        if(!app.scene.getObjectByName(app.peer.id))
+        {
+            console.log("Token already added to scene!");
+            return;
+        }
+
+        var tokenObj = app.scene.getObjectByName(app.peer.id);
+        var hexGrid = new HexGrid();
+        var sp = new THREE.Vector3(tokenObj.position.x, tokenObj.position.z, 0.0);
+        var hexCenterInCubeCoords = hexGrid.HexRound(hexGrid.CoordToHex(sp, app.gridScale));
+
+        //move is a vec3 that increments the cube coords
+        var newHexCenter = hexGrid.HexRound(hexCenterInCubeCoords);
+        newHexCenter.x  = newHexCenter.x + move.x;
+        newHexCenter.y  = newHexCenter.y + move.y;
+        newHexCenter.z  = newHexCenter.z + move.z;
+        var newPos = hexGrid.HexToCoord(newHexCenter, app.gridScale);
+
+        tokenObj.position.set(newPos.x, 0.0, newPos.y);
+    }
+
     sendActionToHost(app, action) {
 
     }
@@ -439,7 +462,7 @@ class Actions {
                 );
                 app.transients.push(app.gridObj);
 
-                app.gridObj.position.set(0.0, 0.01, 0.0);
+                app.gridObj.position.set(0.0, 0.0001, 0.0);
                 app.gridObj.name = "GridObj";
                 app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
 

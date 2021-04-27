@@ -84,8 +84,29 @@ void main() {
   vec2 sp = (wu - center_coord.xy);
   float sd = abs(sd_hex(sp, u_grid_scale)); //needs some scaling or something.
 
+
+    float u_contour_spacing = 1.0;
+  float u_contour_width = 0.16 * u_grid_scale;
+
+    vec4 col_contour = vec4(0.9, 0.9, 0.9, u_grid_alpha);
+  const vec4 col_outside = vec4(0.9, 0.9, 0.9, 0.0);
+  const vec4 col_inside = vec4(0.9, 0.9, 0.9, 0.0);
+
+  vec4 col = mix(col_inside, col_outside, step(0.0, sd));
+  float dist_change = fwidth(sd) * 0.5;
+
+    // Major contour lines
+  {
+    float spacing = u_contour_spacing;
+    float width = u_contour_width;
+
+    float t = abs(fract(sd / spacing + 0.5) - 0.5) * spacing;
+    t = smoothstep(width - dist_change, width + dist_change, t);
+    col = mix(col_contour, col, t);
+  }
+
   // Initiate the background to a white color, putting in some dark borders.
-  vec4 hexCol = mix(vec4(1., 1., 1., u_grid_alpha), vec4(1., 1., 1., 0.), smoothstep(0.0, u_grid_spacing * u_grid_scale, sd)); 
+  vec4 hexCol = col;//mix(vec4(1., 1., 1., u_grid_alpha), vec4(1., 1., 1., 0.), step(0.0, u_grid_spacing, sd)); 
 
 
   #ifdef USE_FOG
