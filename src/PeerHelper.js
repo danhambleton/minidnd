@@ -7,6 +7,106 @@ class PeerHelper {
     }
 
     initAsHost(app, id) {
+
+        // Create own peer object with connection to shared PeerJS server
+        app.peer = new Peer(process.env.HOST_ID, {
+            host: process.env.PEERJS_SERVER,
+            path: '/',
+            secure: true,
+            debug: 2
+        });
+
+        app.peer.on('open', function (id) {
+            // Workaround for peer.reconnect deleting previous id
+            if (app.peer.id === null) {
+                console.log('Received null id from peer open');
+                app.peer.id = app.lastPeerId;
+            } else {
+                app.lastPeerId = app.peer.id;
+            }
+
+            console.log('ID: ' + app.peer.id);
+            app.hostID.innerHTML = "ID: " + app.peer.id;
+            app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
+
+            //load the content from manifest on server
+            // LoadWorkspace(LoadContentGrid);
+
+        });
+        app.peer.on('connection', function (c) {
+
+            c.on('open', function () {
+                // c.send("Sender does not accept incoming connections");
+                // setTimeout(function() { c.close(); }, 500);
+                if (app.conn.length < process.env.MAX_PEERS) {
+                    app.conn.push(c);
+                    c.send("Connected with host: " + app.peer.id);
+                    addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
+                    app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
+
+
+                }
+                else {
+                    c.send("Host has reached max number of peers. Disconnecting...");
+                    addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
+                    setTimeout(function () { c.close(); }, 500);
+                }
+
+            });
+
+            c.on('close', function () {
+
+                const index = app.conn.indexOf(c);
+                if (index > -1) {
+                    app.conn.splice(index, 1);
+                }
+                app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
+
+            });
+
+            c.on('data', function (data) {
+
+                console.log(data);
+
+                if(data.type === "token")
+                {
+                    
+                    for (const oc of app.conn) {
+
+                        if (oc && oc.open && oc !== c ) {
+
+                            console.log("sending to: " + oc.peer)
+                            oc.send(data);
+                        } else {
+                            console.log('Connection is closed');
+                        }
+                    }
+                }
+
+            });
+        });
+        app.peer.on('disconnected', function () {
+            app.status.innerHTML = "Connection lost. Please reconnect";
+            console.log('Connection lost. Please reconnect');
+
+            // Workaround for peer.reconnect deleting previous id
+            app.peer.id = app.lastPeerId;
+            app.peer._lastServerId = app.lastPeerId;
+            app.peer.reconnect();
+        });
+        app.peer.on('close', function () {
+            app.conn = [];
+            app.status.innerHTML = "Connection destroyed. Please refresh";
+            console.log('Connection destroyed');
+        });
+        app.peer.on('error', function (err) {
+            console.log(err);
+            alert('' + err);
+        });
+
+    }
+
+    initAsPlayer(app, id) {
         // Create own peer object with connection to shared PeerJS server
         app.peer = new Peer(null, {
             host: id,

@@ -3,56 +3,48 @@ import Peer, * as peer from "peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
 import aws from "aws-sdk"
 import { nanoid } from 'nanoid'
+import { SoundCue, ModelCue, MapCue } from "./Cues.js"
+import { PeerHelper } from "./PeerHelper.js"
+import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
+import { UIHelpers } from "./UIHelpers.js"
 
 main();
 
 function main() {
 
-    var lastPeerId = null;
-    var peer = null; // own peer object
-    var conn = new Array();
-    var hostID = document.getElementById("host-id");
-    var status = document.getElementById("status");
-    var message = document.getElementById("message");
+   const app = {
 
-    var inspector = document.getElementById("inspector");
+        //peer
+        lastPeerId : null,
+        peer : null, // own peer objec,
+        conn : new Array(),
 
-    var sendMessageBox = document.getElementById("sendMessageBox");
-    var sendButton = document.getElementById("sendButton");
-    var clearMsgsButton = document.getElementById("clearMsgsButton");
-    var playContentButton = document.getElementById("playContent");
-    var saveContentButton = document.getElementById("saveWorkspace");
-    var stopContentButton = document.getElementById("stopContent");
-    var masterVolumeSlider = document.getElementById("master-volume");
-    var masterVolumeLabel= document.getElementById("volume-label");
-    // var connectButton = document.getElementById("connect-button");
-    var cueString = "<span class=\"cueMsg\">Cue: </span>";
+        //digital ocean spaces
+        s3 : new aws.S3({
+            endpoint: process.env.SPACES_ENDPOINT,
+            accessKeyId: process.env.SPACES_ACCESS_KEY,
+            secretAccessKey: process.env.SPACES_SECRET_KEY,
+        }),
 
-    var stagingArea = document.getElementById("stagedContent");
+        //ui
+        hostID : document.getElementById("host-id"),
+        status : document.getElementById("status"),
+        message : document.getElementById("message"),
+        inspector : document.getElementById("inspector"),
+        sendMessageBox : document.getElementById("sendMessageBox"),
+        sendButton : document.getElementById("sendButton"),
+        clearMsgsButton : document.getElementById("clearMsgsButton"),
+        playContentButton : document.getElementById("playContent"),
+        saveContentButton : document.getElementById("saveWorkspace"),
+        stopContentButton : document.getElementById("stopContent"),
+        masterVolumeSlider : document.getElementById("master-volume"),
+        masterVolumeLabel: document.getElementById("volume-label"),
+        cueString : "<span class=\"cueMsg\">Cue: </span>",
+        stagingArea : document.getElementById("stagedContent"),
 
-    //The main container for the content
-    var stagedContent = {};
-
-    var defaultCueParams = {
-        src: "",
-        type: "",
-        content_state: "empty",
-        ui_state: 'empty',
-        media: null,
-        effects: [],
-        volume: 0.5,
-        pan: 0.0,
-        loop: 0,
-        reverb: 0,
-        fade_in: 1.0,
-        fade_out: 1.0
+        //specific
+        cueMap : []
     };
-
-    const s3 = new aws.S3({
-        endpoint: process.env.SPACES_ENDPOINT,
-        accessKeyId: process.env.SPACES_ACCESS_KEY,
-        secretAccessKey: process.env.SPACES_SECRET_KEY,
-    });
 
     function getContentType(filepath) {
         var ext = filepath.split('.').pop().toLowerCase();
@@ -75,6 +67,28 @@ function main() {
         return 'unknown';
     }
 
+    function getCueFromFileType(filepath)
+    {
+        var ext = filepath.split('.').pop().toLowerCase();
+        if (ext === 'mp3' || ext === 'ogg' || ext === 'wav') {
+            return new SoundCue();
+        }
+
+        // if (ext === 'webm' || ext === 'mp4') {
+        //     return 'video';
+        // }
+
+        if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
+            return new MapCue();
+        }
+
+        if(ext === 'gltf' || ext === 'glb' || ext === 'obj' || ext === 'stl') {
+            return new ModelCue();
+        }
+
+        return null;
+    }
+
     function getShortName(filepath) {
 
         var name = filepath.split(/(\\|\/)/g).pop();
@@ -84,7 +98,7 @@ function main() {
 
     async function LoadWorkspace(callback) {
 
-        if (peer.id === null) {
+        if (app.peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
             return;
         }
@@ -101,14 +115,14 @@ function main() {
 
         };
 
-        s3.getObject(params, function (err, data) {
+        app.s3.getObject(params, function (err, data) {
             if (err) console.log(err, err.stack);
             else {
                 //console.log(data.Body.toString());
 
-                stagedContent = JSON.parse(data.Body);
+                // app.stagedContent = JSON.parse(data.Body);
 
-                console.log(stagedContent);
+                // console.log(stagedContent);
 
                 callback();
             }
@@ -117,7 +131,7 @@ function main() {
 
     async function SaveWorkspace(manifestJSON) {
 
-        if (peer.id === null) {
+        if (app.peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
             return;
         }
@@ -135,7 +149,7 @@ function main() {
             ContentType: 'application/json'
         };
 
-        s3.putObject(params, function (err, data) {
+        app.s3.putObject(params, function (err, data) {
             if (err) console.log(err, err.stack);
             else {
                 console.log(data);
@@ -144,7 +158,7 @@ function main() {
     }
 
     async function UploadAsset(event) {
-        if (peer.id === null) {
+        if (app.peer.id === null) {
             console.log("No peer ID. Cannot upload assets...");
             return;
         }
@@ -165,259 +179,62 @@ function main() {
 
         event.srcElement.innerHTML = "<h2>Uploading</h2>";
 
-        s3.putObject(params, function (err, data) {
+        app.s3.putObject(params, function (err, data) {
             if (err) console.log(err, err.stack);
             else {
-                console.log(data);
+                // console.log(data);
 
-                var b = document.getElementById(id);
-                b.className = "cueElementReady";
-                b.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
-
-                //set up audio for this element
+                var cue = getCueFromFileType(params.Key);
 
                 var url = "https://" + process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key;
+                cue.src = url;
+                cue.id = nanoid(10);
 
-                var contentParams = {
-                    src: url,
-                    type: getContentType(params.Key),
-                    content_state: "none",
-                    ui_state: 'ready',
-                    media: null,
-                    effects: [],
-                    volume: 0.5,
-                    pan: 0.0,
-                    loop: 0,
-                    reverb: 0,
-                    echo: 0,
-                    fade_in: 1.0,
-                    fade_out: 1.0
-                }
+                app.cueMap[id] = cue;
 
-                stagedContent[id] = contentParams;
+                // var b = document.getElementById(id);
+                // b.className = "cueElementReady";
+                // b.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
 
-                if (contentParams.type === "image") {
-                    b.style.backgroundImage = 'url(' + contentParams.src + ')';
-                }
+                event.srcElement.className = "cueElementReady";
+                event.srcElement.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
 
-                SaveWorkspace(JSON.stringify(stagedContent));
+                console.log(app.cueMap);
 
+                // //set up audio for this element
 
+                // var url = "https://" + process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key;
+
+                // var contentParams = {
+                //     src: url,
+                //     type: getContentType(params.Key),
+                //     content_state: "none",
+                //     ui_state: 'ready',
+                //     media: null,
+                //     effects: [],
+                //     volume: 0.5,
+                //     pan: 0.0,
+                //     loop: 0,
+                //     reverb: 0,
+                //     echo: 0,
+                //     fade_in: 1.0,
+                //     fade_out: 1.0
+                // }
+
+                // app.stagedContent[id] = contentParams;
+
+                // if (contentParams.type === "image") {
+                //     b.style.backgroundImage = 'url(' + contentParams.src + ')';
+                // }
+
+                // SaveWorkspace(JSON.stringify(stagedContent));
             }
         });
     }
 
     function BuildContentInspector(id) {
 
-        if(!inspector)
-            return;
-        
-        //display inspector
-        //remove all child elements
-        while (inspector.firstChild) {
-            inspector.removeChild(inspector.firstChild);
-        }
-
-        if(!stagedContent[id])
-            return;
-
-        //custom elements
-        // inspector.title = getShortName(stagedContent[this.id].src);
-        inspector.innerHTML = "<h1>" + getShortName(stagedContent[id].src) + "</h1>";
-
-        let disp = document.createElement("button");
-        disp.className = "inspectorDisplay";
-        inspector.appendChild(disp);
-
-        var volLabel = document.createElement('h3');
-        disp.appendChild(volLabel);
-
-        var volSlider = document.createElement("input");
-        disp.appendChild(volSlider);
-        volSlider.type = "range";
-        volSlider.min = 0.0;
-        volSlider.max = 1.0;
-        volSlider.step = 0.01;
-        volSlider.value = stagedContent[id].volume;
-
-        volLabel.innerHTML = "Volume: " + volSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        volSlider.oninput = function () {
-            stagedContent[id].volume = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            volLabel.innerHTML = "Volume: " + volSlider.value;
-        }
-
-        var panLabel = document.createElement('h3');
-        disp.appendChild(panLabel);
-
-        var panSlider = document.createElement("input");
-        panSlider.type = "range";
-        panSlider.min = -1.0;
-        panSlider.max = 1.0;
-        panSlider.step = 0.01;
-        panSlider.value = stagedContent[id].pan;
-        disp.appendChild(panSlider);
-        panLabel.innerHTML = "Pan: " + panSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        panSlider.oninput = function () {
-            stagedContent[id].pan = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            panLabel.innerHTML = "Pan: " + panSlider.value;
-        }
-
-        var loopLable = document.createElement('h3');
-        disp.appendChild(loopLable);
-
-        var loopSlider = document.createElement("input");
-        loopSlider.type = "range";
-        loopSlider.min = 0.0;
-        loopSlider.max = 1.0;
-        loopSlider.step = 1.0;
-        loopSlider.value = stagedContent[id].loop;
-        disp.appendChild(loopSlider);
-        loopLable.innerHTML = "Loop: " + loopSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        loopSlider.oninput = function () {
-            stagedContent[id].loop = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            loopLable.innerHTML = "Loop: " + loopSlider.value;
-        }
-
-        var reverbLabel = document.createElement('h3');
-        disp.appendChild(reverbLabel);
-
-        var reverbSlider = document.createElement("input");
-        reverbSlider.type = "range";
-        reverbSlider.min = 0.0;
-        reverbSlider.max = 1.0;
-        reverbSlider.step = 0.1;
-        reverbSlider.value = stagedContent[id].reverb;
-        disp.appendChild(reverbSlider);
-        reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        reverbSlider.oninput = function () {
-            stagedContent[id].reverb = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            reverbLabel.innerHTML = "Reverb: " + reverbSlider.value;
-        }
-
-        ///ECHO
-        var echoLabel = document.createElement('h3');
-        disp.appendChild(echoLabel);
-        var echoSlider = document.createElement("input");
-        echoSlider.type = "range";
-        echoSlider.min = 0.0;
-        echoSlider.max = 1.0;
-        echoSlider.step = 0.1;
-        echoSlider.value = stagedContent[id].echo;
-        disp.appendChild(echoSlider);
-        echoLabel.innerHTML = "Echo: " + echoSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        echoSlider.oninput = function () {
-            stagedContent[id].echo = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            echoLabel.innerHTML = "Echo: " + echoSlider.value;
-        }
-
-        ///FADE IN
-        var fadeInLabel = document.createElement('h3');
-        disp.appendChild(fadeInLabel);
-
-        var fadeInSlider = document.createElement("input");
-        fadeInSlider.type = "range";
-        fadeInSlider.min = 0.0;
-        fadeInSlider.max = 5.0;
-        fadeInSlider.step = 0.1;
-        fadeInSlider.value = stagedContent[id].fade_in;
-        disp.appendChild(fadeInSlider);
-        fadeInLabel.innerHTML = "Fade In: " + fadeInSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        fadeInSlider.oninput = function () {
-            stagedContent[id].fade_in = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            fadeInLabel.innerHTML = "Fade In: " + fadeInSlider.value;
-        }
-
-        ///FADE OUT
-        var fadeOutLabel = document.createElement('h3');
-        disp.appendChild(fadeOutLabel);
-
-        var fadeOutSlider = document.createElement("input");
-        fadeOutSlider.type = "range";
-        fadeOutSlider.min = 0.0;
-        fadeOutSlider.max = 5.0;
-        fadeOutSlider.step = 0.1;
-        fadeOutSlider.value = stagedContent[id].fade_out;
-        disp.appendChild(fadeOutSlider);
-        fadeOutLabel.innerHTML = "Fade Out: " + fadeOutSlider.value;
-
-        // Update the current slider value (each time you drag the slider handle)
-        fadeOutSlider.oninput = function () {
-            stagedContent[id].fade_out = this.value;
-            // disp.innerHTML = "<h3>" + JSON.stringify(stagedContent[id],null, 2)+ "</h3>";
-            fadeOutLabel.innerHTML = "Fade Out: " + fadeOutSlider.value;
-        }
-
-        //DELETE
-        var oneShotButton = document.createElement("button");
-        oneShotButton.className = "cueElementReady";
-        oneShotButton.style.backgroundColor = "#15e49f";
-        disp.appendChild(oneShotButton);
-        oneShotButton.innerHTML = "Play One Shot";
-        oneShotButton.addEventListener("click", function() {
-
-
-
-        });
-
-        //DELETE
-        var deleteButton = document.createElement("button");
-        deleteButton.className = "cueElementReady";
-        deleteButton.style.backgroundColor = "#ff1111";
-        disp.appendChild(deleteButton);
-        deleteButton.innerHTML = "Delete Cue";
-        deleteButton.addEventListener("click", function() {
-
-            stagedContent[id] = {
-                src: "",
-                type: "",
-                content_state: "empty",
-                ui_state: 'empty',
-                media: null,
-                effects: [],
-                volume: 0.5,
-                pan: 0.0,
-                loop: 0,
-                reverb: 0,
-                echo: 0,
-                fade_in: 0.0,
-                fade_out: 0.0
-            }
-
-            var cueButton = document.getElementById(id);
-
-            if(cueButton)
-            {
-                cueButton.className = "cueElementEmpty";
-                cueButton.style.backgroundImage = "url()";
-                cueButton.innerHTML = "";
-
-                SaveWorkspace(JSON.stringify(stagedContent));
-
-                //remove inspector ui
-                while (inspector.firstChild) {
-                    inspector.removeChild(inspector.firstChild);
-                }
-            }
-
-        });
+       
     }
 
     function BuildContentGrid() {
@@ -426,21 +243,7 @@ function main() {
             var b = document.createElement("button");
             b.className = "cueElementEmpty";
             b.id = "cb_" + i.toString().padStart(2, '0');
-            stagedContent[b.id] = {
-                src: "",
-                type: "",
-                content_state: "empty",
-                ui_state: 'empty',
-                media: null,
-                effects: [],
-                volume: 0.5,
-                pan: 0.0,
-                loop: 0,
-                reverb: 0,
-                echo: 0,
-                fade_in: 0.0,
-                fade_out: 0.0
-            }
+
             stagingArea.appendChild(b);
 
             // Set up drag-and-drop for the active area
@@ -448,21 +251,48 @@ function main() {
 
             b.addEventListener('click', function () {
 
+                if(app.cueMap[this.id])
+                {
+                    //clear ui
+                    while (app.inspector.firstChild) {
+                        app.inspector.removeChild(app.inspector.firstChild);
+                    }
+
+                    var uiHelper = new UIHelpers();
+                    if(app.cueMap[this.id].type === "sound") {
+                        console.log("building inspector");
+                        uiHelper.buildSoundInspector(app, this.id)
+                    }
+                    if(app.cueMap[this.id].type === "model") {
+                        console.log("building inspector");
+                        uiHelper.buildModelInspector(app, this.id)
+                    }
+                    if(app.cueMap[this.id].type === "map") {
+                        console.log("building inspector");
+                        uiHelper.buildMapInspector(app, this.id)
+                    }
+                    
+ 
+
+                    
+                }
+
+
                 //TODO: set options
-                if (stagedContent[this.id].ui_state === "ready") {
-                    this.className = "cueElementSelected";
-                    let id = this.id;
-                    stagedContent[this.id].ui_state = "selected";
+                // if (stagedContent[this.id].ui_state === "ready") {
+                //     this.className = "cueElementSelected";
+                //     let id = this.id;
+                //     stagedContent[this.id].ui_state = "selected";
 
-                    BuildContentInspector(this.id);
+                //     BuildContentInspector(this.id);
 
-                }
-                else if (stagedContent[this.id].ui_state === "selected") {
-                    this.className = "cueElementReady";
-                    stagedContent[this.id].ui_state = "ready";
-                }
+                // }
+                // else if (stagedContent[this.id].ui_state === "selected") {
+                //     this.className = "cueElementReady";
+                //     stagedContent[this.id].ui_state = "ready";
+                // }
 
-                console.log(stagedContent);
+                // console.log(stagedContent);
             });
         }
     }
@@ -470,33 +300,33 @@ function main() {
     //Load grid contents from manifest
     function LoadContentGrid() {
 
-        for (var i = 0; i < process.env.MAX_SLOTS; i++) {
+        // for (var i = 0; i < process.env.MAX_SLOTS; i++) {
 
-            let id = "cb_" + i.toString().padStart(2, '0');
-            if (stagedContent[id]) {
-                var b = document.getElementById(id);
+        //     let id = "cb_" + i.toString().padStart(2, '0');
+        //     if (stagedContent[id]) {
+        //         var b = document.getElementById(id);
 
-                if (b) {
-                    b.className = "cueElementEmpty";
-                    b.innerHTML = "<h2>" + getShortName(stagedContent[id].src) + "</h2>";
+        //         if (b) {
+        //             b.className = "cueElementEmpty";
+        //             b.innerHTML = "<h2>" + getShortName(stagedContent[id].src) + "</h2>";
 
-                    if (stagedContent[id].ui_state === "selected") {
-                        b.className = "cueElementSelected";
-                    }
+        //             if (stagedContent[id].ui_state === "selected") {
+        //                 b.className = "cueElementSelected";
+        //             }
 
-                    if (stagedContent[id].ui_state === "ready") {
-                        b.className = "cueElementReady";
-                    }
+        //             if (stagedContent[id].ui_state === "ready") {
+        //                 b.className = "cueElementReady";
+        //             }
 
-                    if (stagedContent[id].type === "image") {
-                        b.style.backgroundImage = 'url(' + stagedContent[id].src + ')';
-                    }
-                }
+        //             if (stagedContent[id].type === "image") {
+        //                 b.style.backgroundImage = 'url(' + stagedContent[id].src + ')';
+        //             }
+        //         }
 
-            }
+        //     }
 
 
-        }
+        // }
 
     }
 
@@ -507,101 +337,9 @@ function main() {
      * peer object.
      */
     function initialize() {
-        // Create own peer object with connection to shared PeerJS server
-        peer = new Peer(process.env.HOST_ID, {
-            host: process.env.PEERJS_SERVER,
-            path: '/',
-            secure: true,
-            debug: 2
-        });
-
-        peer.on('open', function (id) {
-            // Workaround for peer.reconnect deleting previous id
-            if (peer.id === null) {
-                console.log('Received null id from peer open');
-                peer.id = lastPeerId;
-            } else {
-                lastPeerId = peer.id;
-            }
-
-            console.log('ID: ' + peer.id);
-            hostID.innerHTML = "ID: " + peer.id;
-            status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
-
-            //load the content from manifest on server
-            LoadWorkspace(LoadContentGrid);
-
-        });
-        peer.on('connection', function (c) {
-
-            c.on('open', function () {
-                // c.send("Sender does not accept incoming connections");
-                // setTimeout(function() { c.close(); }, 500);
-                if (conn.length < process.env.MAX_PEERS) {
-                    conn.push(c);
-                    c.send("Connected with host: " + peer.id);
-                    addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
-                    status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
-
-
-                }
-                else {
-                    c.send("Host has reached max number of peers. Disconnecting...");
-                    addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
-                    setTimeout(function () { c.close(); }, 500);
-                }
-
-            });
-
-            c.on('close', function () {
-
-                const index = conn.indexOf(c);
-                if (index > -1) {
-                    conn.splice(index, 1);
-                }
-                status.innerHTML = `Available connections: (${conn.length}/${process.env.MAX_PEERS})`;
-
-            });
-
-            c.on('data', function (data) {
-
-                console.log(data);
-
-                if(data.type === "token")
-                {
-                    
-                    for (const oc of conn) {
-
-                        if (oc && oc.open && oc !== c ) {
-
-                            console.log("sending to: " + oc.peer)
-                            oc.send(data);
-                        } else {
-                            console.log('Connection is closed');
-                        }
-                    }
-                }
-
-            });
-        });
-        peer.on('disconnected', function () {
-            status.innerHTML = "Connection lost. Please reconnect";
-            console.log('Connection lost. Please reconnect');
-
-            // Workaround for peer.reconnect deleting previous id
-            peer.id = lastPeerId;
-            peer._lastServerId = lastPeerId;
-            peer.reconnect();
-        });
-        peer.on('close', function () {
-            conn = [];
-            status.innerHTML = "Connection destroyed. Please refresh";
-            console.log('Connection destroyed');
-        });
-        peer.on('error', function (err) {
-            console.log(err);
-            alert('' + err);
-        });
+        
+        var peerHelper = new PeerHelper();
+        peerHelper.initAsHost(app, null);
     };
 
     function ready()
@@ -648,15 +386,15 @@ function main() {
      * Send a signal via the peer connection and add it to the log.
      * This will only occur if the connection is still alive.
      */
-    function signal(sigName) {
-        if (conn && conn.open) {
-            conn.send(sigName);
-            console.log(sigName + " signal sent");
-            addMessage(cueString + sigName);
-        } else {
-            console.log('Connection is closed');
-        }
-    }
+    // function signal(sigName) {
+    //     if (conn && conn.open) {
+    //         conn.send(sigName);
+    //         console.log(sigName + " signal sent");
+    //         addMessage(cueString + sigName);
+    //     } else {
+    //         console.log('Connection is closed');
+    //     }
+    // }
 
     function addMessage(msg) {
         var now = new Date();
@@ -675,11 +413,11 @@ function main() {
             return t;
         };
 
-        message.innerHTML = "<br><span class=\"msg-time\">" + h + ":" + m + ":" + s + "</span>  -  " + msg + message.innerHTML;
+        app.message.innerHTML = "<br><span class=\"msg-time\">" + h + ":" + m + ":" + s + "</span>  -  " + msg + message.innerHTML;
     };
 
     function clearMessages() {
-        message.innerHTML = "";
+        app.message.innerHTML = "";
         addMessage("Msgs cleared");
     };
 
@@ -687,18 +425,18 @@ function main() {
     BuildContentGrid();
 
     // Listen for enter in message box
-    sendMessageBox.addEventListener('keypress', function (e) {
+    app.sendMessageBox.addEventListener('keypress', function (e) {
         var event = e || window.event;
         var char = event.which || event.keyCode;
         if (char == '13')
-            sendButton.click();
+            app.sendButton.click();
     });
     // Send message
-    sendButton.addEventListener('click', function () {
+    app.sendButton.addEventListener('click', function () {
 
-        var msg = sendMessageBox.value;
-        sendMessageBox.value = "";
-        for (const c of conn) {
+        var msg = app.sendMessageBox.value;
+        app.sendMessageBox.value = "";
+        for (const c of app.conn) {
             if (c && c.open) {
                 c.send(msg);
             } else {
@@ -712,26 +450,26 @@ function main() {
     });
 
     // Clear messages box
-    clearMsgsButton.addEventListener('click', clearMessages);
+    app.clearMsgsButton.addEventListener('click', clearMessages);
     // Start peer connection on click
     // connectButton.addEventListener('click', join);
 
-    saveContentButton.addEventListener('click', function () {
+    app.saveContentButton.addEventListener('click', function () {
 
-        SaveWorkspace(JSON.stringify(stagedContent));
+        // SaveWorkspace(JSON.stringify(stagedContent));
 
     });
 
-    playContentButton.addEventListener('click', function () {
+    app.playContentButton.addEventListener('click', function () {
 
         //send staged content to all connected peers
-        for (const c of conn) {
+        for (const c of app.conn) {
 
             if (c && c.open) {
 
                 var cue = {
                     type: "soundstage",
-                    body: stagedContent
+                    body: {}
                 }
 
                 c.send(cue);
@@ -742,69 +480,69 @@ function main() {
 
     });
 
-    stopContentButton.addEventListener('click', function () {
+    app.stopContentButton.addEventListener('click', function () {
 
-        //deselect all content
-        for(const id in stagedContent)
-        {
+        // //deselect all content
+        // for(const id in stagedContent)
+        // {
             
             
-            var b = document.getElementById(id);
-            if(b)
-            {
-                if(stagedContent[id].ui_state === "ready" || stagedContent[id].ui_state === "selected")
-                {
-                    b.className = "cueElementReady";
-                }
+        //     var b = document.getElementById(id);
+        //     if(b)
+        //     {
+        //         if(stagedContent[id].ui_state === "ready" || stagedContent[id].ui_state === "selected")
+        //         {
+        //             b.className = "cueElementReady";
+        //         }
 
-                else
-                {
-                    b.className = "cueElementEmpty";
-                }
+        //         else
+        //         {
+        //             b.className = "cueElementEmpty";
+        //         }
 
-                stagedContent[id].ui_state = "ready";
+        //         stagedContent[id].ui_state = "ready";
 
-            }
-        }
+        //     }
+        // }
         
-        //send staged content to all connected peers
-        for (const c of conn) {
+        // //send staged content to all connected peers
+        // for (const c of conn) {
 
-            if (c && c.open) {
+        //     if (c && c.open) {
 
-                var cue = {
-                    type: "soundstage",
-                    body: stagedContent
-                }
+        //         var cue = {
+        //             type: "soundstage",
+        //             body: stagedContent
+        //         }
 
-                c.send(cue);
-            } else {
-                console.log('Connection is closed');
-            }
-        }
+        //         c.send(cue);
+        //     } else {
+        //         console.log('Connection is closed');
+        //     }
+        // }
 
     });
 
-    masterVolumeSlider.addEventListener("change", function(){
+    app.masterVolumeSlider.addEventListener("change", function(){
 
-        masterVolumeLabel.innerHTML = "Vol: " + this.value;
+        // masterVolumeLabel.innerHTML = "Vol: " + this.value;
         
-        for (const c of conn) {
+        // for (const c of conn) {
 
-            if (c && c.open) {
+        //     if (c && c.open) {
 
-                var cue = {
-                    type: "master-volume",
-                    body: {
-                        volume: this.value
-                    }
-                }
+        //         var cue = {
+        //             type: "master-volume",
+        //             body: {
+        //                 volume: this.value
+        //             }
+        //         }
 
-                c.send(cue);
-            } else {
-                console.log('Connection is closed');
-            }
-        }
+        //         c.send(cue);
+        //     } else {
+        //         console.log('Connection is closed');
+        //     }
+        // }
 
     })
 

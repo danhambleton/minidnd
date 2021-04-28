@@ -104,6 +104,7 @@ img {
     .inspector {
         grid-column: 3;
         grid-row: 2 / span 3;
+        padding: 10px;
     }
 
     .console {
