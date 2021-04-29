@@ -3,47 +3,49 @@ import Peer, * as peer from "peerjs"
 import { setupDragAndDrop } from "./DragAndDrop.js"
 import aws from "aws-sdk"
 import { nanoid } from 'nanoid'
-import { SoundCue, ModelCue, MapCue } from "./Cues.js"
+import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
 import { PeerHelper } from "./PeerHelper.js"
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
 import { UIHelpers } from "./UIHelpers.js"
+import { ceil } from "lodash"
 
 main();
 
 function main() {
 
-   const app = {
+
+    const app = {
 
         //peer
-        lastPeerId : null,
-        peer : null, // own peer objec,
-        conn : new Array(),
+        lastPeerId: null,
+        peer: null, // own peer objec,
+        conn: new Array(),
 
         //digital ocean spaces
-        s3 : new aws.S3({
+        s3: new aws.S3({
             endpoint: process.env.SPACES_ENDPOINT,
             accessKeyId: process.env.SPACES_ACCESS_KEY,
             secretAccessKey: process.env.SPACES_SECRET_KEY,
         }),
 
         //ui
-        hostID : document.getElementById("host-id"),
-        status : document.getElementById("status"),
-        message : document.getElementById("message"),
-        inspector : document.getElementById("inspector"),
-        sendMessageBox : document.getElementById("sendMessageBox"),
-        sendButton : document.getElementById("sendButton"),
-        clearMsgsButton : document.getElementById("clearMsgsButton"),
-        playContentButton : document.getElementById("playContent"),
-        saveContentButton : document.getElementById("saveWorkspace"),
-        stopContentButton : document.getElementById("stopContent"),
-        masterVolumeSlider : document.getElementById("master-volume"),
+        hostID: document.getElementById("host-id"),
+        status: document.getElementById("status"),
+        message: document.getElementById("message"),
+        inspector: document.getElementById("inspector"),
+        sendMessageBox: document.getElementById("sendMessageBox"),
+        sendButton: document.getElementById("sendButton"),
+        clearMsgsButton: document.getElementById("clearMsgsButton"),
+        playContentButton: document.getElementById("playContent"),
+        saveContentButton: document.getElementById("saveWorkspace"),
+        stopContentButton: document.getElementById("stopContent"),
+        masterVolumeSlider: document.getElementById("master-volume"),
         masterVolumeLabel: document.getElementById("volume-label"),
-        cueString : "<span class=\"cueMsg\">Cue: </span>",
-        stagingArea : document.getElementById("stagedContent"),
+        cueString: "<span class=\"cueMsg\">Cue: </span>",
+        stagingArea: document.getElementById("stagedContent"),
 
         //specific
-        cueMap : []
+        cueMap: {}
     };
 
     function getContentType(filepath) {
@@ -60,15 +62,14 @@ function main() {
             return 'image';
         }
 
-        if(ext === 'gltf' || ext === 'glb' || ext === 'obj' || ext === 'stl') {
+        if (ext === 'gltf' || ext === 'glb' || ext === 'obj' || ext === 'stl') {
             return 'model';
         }
 
         return 'unknown';
     }
 
-    function getCueFromFileType(filepath)
-    {
+    function getCueFromFileType(filepath) {
         var ext = filepath.split('.').pop().toLowerCase();
         if (ext === 'mp3' || ext === 'ogg' || ext === 'wav') {
             return new SoundCue();
@@ -82,7 +83,7 @@ function main() {
             return new MapCue();
         }
 
-        if(ext === 'gltf' || ext === 'glb' || ext === 'obj' || ext === 'stl') {
+        if (ext === 'gltf' || ext === 'glb' || ext === 'obj' || ext === 'stl') {
             return new ModelCue();
         }
 
@@ -111,7 +112,7 @@ function main() {
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: peer.id + "/manifest.json",
+            Key: app.peer.id + "/manifest.json",
 
         };
 
@@ -120,9 +121,9 @@ function main() {
             else {
                 //console.log(data.Body.toString());
 
-                // app.stagedContent = JSON.parse(data.Body);
+                app.cueMap = JSON.parse(data.Body);
 
-                // console.log(stagedContent);
+                console.log(app.cueMap);
 
                 callback();
             }
@@ -144,7 +145,7 @@ function main() {
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: peer.id + "/manifest.json",
+            Key: app.peer.id + "/manifest.json",
             ACL: 'public-read',
             ContentType: 'application/json'
         };
@@ -173,7 +174,7 @@ function main() {
         var params = {
             Body: asset,
             Bucket: process.env.SPACES_BUCKET,
-            Key: peer.id + "/" + files[0].name,
+            Key: app.peer.id + "/" + files[0].name,
             ACL: 'public-read'
         };
 
@@ -189,52 +190,23 @@ function main() {
                 var url = "https://" + process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key;
                 cue.src = url;
                 cue.id = nanoid(10);
+                cue.name = getShortName(params.Key);
+                cue.state = CueState.READY;
 
                 app.cueMap[id] = cue;
 
-                // var b = document.getElementById(id);
-                // b.className = "cueElementReady";
-                // b.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
-
                 event.srcElement.className = "cueElementReady";
-                event.srcElement.innerHTML = "<h2>" + getShortName(params.Key) + "</h2>";
+                event.srcElement.innerHTML = "<h2>" + cue.name + "</h2>";
 
                 console.log(app.cueMap);
 
-                // //set up audio for this element
+                if (cue.type === "map") {
+                    event.srcElement.style.backgroundImage = 'url(' + cue.src + ')';
+                }
 
-                // var url = "https://" + process.env.SPACES_BUCKET + "." + process.env.SPACES_ENDPOINT + "/" + params.Key;
-
-                // var contentParams = {
-                //     src: url,
-                //     type: getContentType(params.Key),
-                //     content_state: "none",
-                //     ui_state: 'ready',
-                //     media: null,
-                //     effects: [],
-                //     volume: 0.5,
-                //     pan: 0.0,
-                //     loop: 0,
-                //     reverb: 0,
-                //     echo: 0,
-                //     fade_in: 1.0,
-                //     fade_out: 1.0
-                // }
-
-                // app.stagedContent[id] = contentParams;
-
-                // if (contentParams.type === "image") {
-                //     b.style.backgroundImage = 'url(' + contentParams.src + ')';
-                // }
-
-                // SaveWorkspace(JSON.stringify(stagedContent));
+                SaveWorkspace(JSON.stringify(app.cueMap));
             }
         });
-    }
-
-    function BuildContentInspector(id) {
-
-       
     }
 
     function BuildContentGrid() {
@@ -251,48 +223,37 @@ function main() {
 
             b.addEventListener('click', function () {
 
-                if(app.cueMap[this.id])
-                {
+                if (app.cueMap[this.id]) {
                     //clear ui
                     while (app.inspector.firstChild) {
                         app.inspector.removeChild(app.inspector.firstChild);
                     }
 
                     var uiHelper = new UIHelpers();
-                    if(app.cueMap[this.id].type === "sound") {
+                    if (app.cueMap[this.id].type === "sound") {
                         console.log("building inspector");
                         uiHelper.buildSoundInspector(app, this.id)
                     }
-                    if(app.cueMap[this.id].type === "model") {
+                    if (app.cueMap[this.id].type === "model") {
                         console.log("building inspector");
                         uiHelper.buildModelInspector(app, this.id)
                     }
-                    if(app.cueMap[this.id].type === "map") {
+                    if (app.cueMap[this.id].type === "map") {
                         console.log("building inspector");
                         uiHelper.buildMapInspector(app, this.id)
                     }
-                    
- 
 
-                    
+                    if (app.cueMap[this.id].state === CueState.READY) {
+                        this.className = "cueElementSelected";
+                        app.cueMap[this.id].state = CueState.ACTIVE;
+
+                    }
+                    else if (app.cueMap[this.id].state === CueState.ACTIVE) {
+                        this.className = "cueElementReady";
+                        app.cueMap[this.id].state = CueState.READY;
+                    }
+
                 }
-
-
-                //TODO: set options
-                // if (stagedContent[this.id].ui_state === "ready") {
-                //     this.className = "cueElementSelected";
-                //     let id = this.id;
-                //     stagedContent[this.id].ui_state = "selected";
-
-                //     BuildContentInspector(this.id);
-
-                // }
-                // else if (stagedContent[this.id].ui_state === "selected") {
-                //     this.className = "cueElementReady";
-                //     stagedContent[this.id].ui_state = "ready";
-                // }
-
-                // console.log(stagedContent);
             });
         }
     }
@@ -300,33 +261,70 @@ function main() {
     //Load grid contents from manifest
     function LoadContentGrid() {
 
-        // for (var i = 0; i < process.env.MAX_SLOTS; i++) {
+        for (var i = 0; i < process.env.MAX_SLOTS; i++) {
 
-        //     let id = "cb_" + i.toString().padStart(2, '0');
-        //     if (stagedContent[id]) {
-        //         var b = document.getElementById(id);
+            let id = "cb_" + i.toString().padStart(2, '0');
+            if (app.cueMap[id]) {
+                var b = document.getElementById(id);
 
-        //         if (b) {
-        //             b.className = "cueElementEmpty";
-        //             b.innerHTML = "<h2>" + getShortName(stagedContent[id].src) + "</h2>";
+                if (b) {
+                    b.className = "cueElementEmpty";
+                    b.innerHTML = "<h2>" + getShortName(app.cueMap[id].src) + "</h2>";
 
-        //             if (stagedContent[id].ui_state === "selected") {
-        //                 b.className = "cueElementSelected";
-        //             }
+                    if (app.cueMap[id].state === CueState.ACTIVE) {
+                        b.className = "cueElementSelected";
+                    }
 
-        //             if (stagedContent[id].ui_state === "ready") {
-        //                 b.className = "cueElementReady";
-        //             }
+                    if (app.cueMap[id].state === CueState.READY) {
+                        b.className = "cueElementReady";
+                    }
 
-        //             if (stagedContent[id].type === "image") {
-        //                 b.style.backgroundImage = 'url(' + stagedContent[id].src + ')';
-        //             }
-        //         }
+                    if (app.cueMap[id].type === CueType.MAP) {
+                        b.style.backgroundImage = 'url(' + app.cueMap[id].src + ')';
+                    }
+                }
 
-        //     }
+            }
 
 
-        // }
+        }
+    }
+
+    function sendCue (cue) {
+        
+        //send staged content to all connected peers
+        for (const c of app.conn) {
+
+            if (c && c.open) {
+
+                c.send(cue);
+
+            } else {
+                console.log('Connection is closed');
+            }
+        }
+    }
+
+    function sendAllCues () {
+
+        //send staged content to all connected peers
+        for (const c of app.conn) {
+
+            if (c && c.open) {
+
+                for(const cid in app.cueMap)
+                {
+                    c.send(app.cueMap[cid]);
+                }
+
+            } else {
+                console.log('Connection is closed');
+            }
+        }
+
+    }
+
+    function deactivateAllCues() {
 
     }
 
@@ -337,33 +335,11 @@ function main() {
      * peer object.
      */
     function initialize() {
-        
+
         var peerHelper = new PeerHelper();
         peerHelper.initAsHost(app, null);
     };
 
-    function ready()
-    {
-        // for (const c of conn) {
-        
-        //     c.on('data', function (data) {
-            
-        //         console.log(data);
-
-        //         if(data.type === "token")
-        //         {
-        //             for (const oc of conn) {
-
-        //                 if (oc && oc.open && oc !== c ) {
-        //                     oc.send(data);
-        //                 } else {
-        //                     console.log('Connection is closed');
-        //                 }
-        //             }
-        //         }
-        //     });
-        // }
-    }
 
     /**
      * Get first "GET style" parameter from href.
@@ -456,37 +432,27 @@ function main() {
 
     app.saveContentButton.addEventListener('click', function () {
 
-        // SaveWorkspace(JSON.stringify(stagedContent));
+        SaveWorkspace(JSON.stringify(stagedContent));
 
     });
 
     app.playContentButton.addEventListener('click', function () {
 
-        //send staged content to all connected peers
-        for (const c of app.conn) {
-
-            if (c && c.open) {
-
-                var cue = {
-                    type: "soundstage",
-                    body: {}
-                }
-
-                c.send(cue);
-            } else {
-                console.log('Connection is closed');
-            }
-        }
+        sendAllCues();
 
     });
 
     app.stopContentButton.addEventListener('click', function () {
 
+        sendCue({
+            type : CueType.AUDIOKILL
+        })
+
         // //deselect all content
         // for(const id in stagedContent)
         // {
-            
-            
+
+
         //     var b = document.getElementById(id);
         //     if(b)
         //     {
@@ -504,7 +470,7 @@ function main() {
 
         //     }
         // }
-        
+
         // //send staged content to all connected peers
         // for (const c of conn) {
 
@@ -523,26 +489,12 @@ function main() {
 
     });
 
-    app.masterVolumeSlider.addEventListener("change", function(){
-
-        // masterVolumeLabel.innerHTML = "Vol: " + this.value;
-        
-        // for (const c of conn) {
-
-        //     if (c && c.open) {
-
-        //         var cue = {
-        //             type: "master-volume",
-        //             body: {
-        //                 volume: this.value
-        //             }
-        //         }
-
-        //         c.send(cue);
-        //     } else {
-        //         console.log('Connection is closed');
-        //     }
-        // }
+    app.masterVolumeSlider.addEventListener("change", function () {
+        app.masterVolumeLabel.innerHTML = this.value;
+        sendCue({
+            type : CueType.VOLUME,
+            volume : parseFloat(this.value)
+        })
 
     })
 

@@ -10,6 +10,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as MapShaders from "./MapShaders.js";
 import { HexGrid } from "./HexGrid.js"
+import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
 
 
 
@@ -43,9 +44,6 @@ class Actions {
 
                 var matCapMaterial = null;
 
-
-               
-
                 gltf.scene.traverse(function (object) {
                     if (object.isMesh) {
 
@@ -72,7 +70,7 @@ class Actions {
                 });
 
                 app.modelCache[params.src] = gltf.scene;
-                callback(params.src);
+                callback();
             },
             // called while loading is progressing
             function (xhr) {
@@ -85,7 +83,7 @@ class Actions {
             // called when loading has errors
             function (error) {
 
-                console.log('An error happened');
+                console.log('A model load error happened');
 
             }
         );
@@ -121,22 +119,22 @@ class Actions {
 
     }
 
-    loadSound(app, params, callback) {
-        console.log("creating new audio at: " + params.src);
+    loadSound(app, cue, callback) {
+        console.log("creating new audio at: " + cue.src);
 
         let track = new Pizzicato.Sound({
             source: 'file',
             options: {
-                path: params.src
+                path: cue.src
             }
         }, function () {
 
             var stereoPanner = new Pizzicato.Effects.StereoPanner({
-                pan: parseFloat(params.pan)
+                pan: cue.pan
             });
 
             var reverb = new Pizzicato.Effects.Reverb({
-                time: parseFloat(params.reverb),
+                time: cue.reverb,
                 decay: 0.2,
                 reverse: false,
                 mix: 0.5
@@ -145,65 +143,62 @@ class Actions {
             var pingPongDelay = new Pizzicato.Effects.PingPongDelay({
                 feedback: 0.3,
                 time: 0.5,
-                mix: parseFloat(params.echo)
+                mix: cue.echo
             });
+
+            console.log(cue);
 
             console.log('sound file loaded!');
             track.addEffect(stereoPanner);
             track.addEffect(reverb);
             track.addEffect(pingPongDelay);
-            track.volume = parseFloat(params.volume);
-            track.loop = parseFloat(params.loop) < 0.5 ? false : true;
-            track.attack = parseFloat(params.fade_in);
-            track.release = parseFloat(params.fade_out);
+            track.volume = cue.volume;
+            track.loop = cue.loop;
+            track.attack = cue.fade_in;
+            track.release = cue.fade_out;
 
-            app.audioCache[id] = params;
-            app.audioCache[id].media = track;
-            app.audioCache[id].effects[0] = stereoPanner;
-            app.audioCache[id].effects[1] = reverb;
-            app.audioCache[id].effects[2] = pingPongDelay;
-            app.audioCache[id].content_state = "ready";
+            let id = cue.id;
+
+            app.cueMap[id] = cue;
+            app.cueMap[id].media = track;
+            app.cueMap[id].effects[0] = stereoPanner;
+            app.cueMap[id].effects[1] = reverb;
+            app.cueMap[id].effects[2] = pingPongDelay;
 
             //track stop
-            app.audioCache[id].media.on("stop", function () {
-                app.audioCache[id].content_state = "default";
+            app.cueMap[id].media.on("stop", function () {
+                app.cueMap[id].state = CueState.READY;
             });
 
-            // //handle special case where sound needs to load and then play 
-            // if (params.ui_state === "selected") {
-            //     app.audioMap[id].media.play();
-            //     app.audioMap[id].content_state = "playing";
-            // }
-
-            callback();
+            callback(id);
         });
     }
 
-    updateSound(app, params) {
+    updateSound(app, cue) {
 
-        var id = params.id;
+
+        let id = cue.id;
         
-        app.audioMap[id].media.volume = parseFloat(params.volume);
-        app.audioMap[id].media.attack = parseFloat(params.fade_in);
-        app.audioMap[id].media.release = parseFloat(params.fade_out);
-        app.audioMap[id].effects[0].pan = parseFloat(params.pan);
-        app.audioMap[id].effects[1].time = parseFloat(params.reverb);
-        app.audioMap[id].effects[2].mix = parseFloat(params.echo);
-        app.audioMap[id].loop = parseFloat(params.loop) < 0.5 ? false : true;
-
-        if (app.audioMap[id].content_state !== "playing") {
-            app.audioMap[id].media.play();
-            app.audioMap[id].content_state = "playing";
-        }
+        app.cueMap[id].media.volume = cue.volume;
+        app.cueMap[id].media.attack = cue.fade_in;
+        app.cueMap[id].media.release = cue.fade_out;
+        app.cueMap[id].effects[0].pan = cue.pan;
+        app.cueMap[id].effects[1].time = cue.reverb;
+        app.cueMap[id].effects[2].mix = cue.echo;
+        app.cueMap[id].loop = cue.loop;
 
     }
 
     addModelToScene(app, params) {
-        var model = app.modeleCache[params.src];
+
+        var model = app.modelCache[params.src];
 
         if (model) {
             var obj = model.clone();
+            obj.scale.set(params.scale, params.scale, params.scale);
+            obj.position.set(params.position.x, params.position.y, params.position.z);
             app.scene.add(obj);
+            app.transients.push(obj);
             //other params
         }
         else {
@@ -403,7 +398,7 @@ class Actions {
         app.transients = [];
     }
 
-    buildMapScene(app, params) {
+    buildMapScene(app, params, callback) {
         this.removeTransients(app);
 
         this.loadImage(app, params, function (texture) {
@@ -440,13 +435,13 @@ class Actions {
 
             console.log(params);
 
-            if (parseFloat(params.loop) > 0.5) {
+            if (params.showGrid) {
 
                 console.log("building grid obj...");
 
-                app.gridScale = parseFloat(params.volume);
-                app.gridOpacity = parseFloat(params.reverb);
-                app.shaderUniforms.u_grid_spacing.value = parseFloat(params.echo);
+                app.gridScale = params.gridScale;
+                app.gridOpacity = params.gridOpacity;
+                app.shaderUniforms.u_grid_spacing.value = params.lineThickness;
                 app.shaderUniforms.u_grid_scale.value = app.gridScale
                 app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
 
@@ -473,6 +468,8 @@ class Actions {
             }
 
             app.renderer.render(app.scene, app.camera);
+
+            callback();
 
         });
     }

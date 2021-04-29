@@ -14,12 +14,13 @@ import { Actions } from "./Actions.js"
 import { HexGrid } from "./HexGrid.js"
 import { PeerHelper } from "./PeerHelper.js"
 import { ThreeHelper } from "./ThreeHelper.js";
+import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
 
 main();
 
 function main() {
 
-    let app = {
+    const app = {
 
         //Threejs
         renderer: null,
@@ -36,6 +37,7 @@ function main() {
         lastPeerId: null,
 
         //app specific
+        cueMap: {}, //unlike the sender, this is indexed by unique id.
         audioMap: {},
         imageMap: {},
         audioCache: {},
@@ -217,7 +219,7 @@ function main() {
     function initialize() {
 
         var peerHelper = new PeerHelper();
-        peerHelper.initAsHost(app, process.env.PEERJS_SERVER);
+        peerHelper.initAsPlayer(app, process.env.PEERJS_SERVER);
 
         var threeHelper = new ThreeHelper();
         threeHelper.initScene(app);
@@ -262,46 +264,40 @@ function main() {
 
         });
 
-        onkeydown = onkeyup = function(e){
+        onkeydown = onkeyup = function (e) {
             e = e || event; // to deal with IE
             app.keyMap[e.keyCode] = e.type == 'keydown';
             /* insert conditional here */
 
-            if(app.keyMap[81])
-            {
+            if (app.keyMap[81]) {
                 //move hex +y
                 actions.movePlayerToNextHex(app, new THREE.Vector3(-1.0, 1.0, 0.0));
 
             }
-            if(app.keyMap[87])
-            {
+            if (app.keyMap[87]) {
                 //move hex -z
                 actions.movePlayerToNextHex(app, new THREE.Vector3(0.0, 1.0, -1.0));
-                
+
             }
-            if(app.keyMap[69])
-            {
+            if (app.keyMap[69]) {
                 //move hex +x
                 actions.movePlayerToNextHex(app, new THREE.Vector3(1.0, 0.0, -1.0));
-                
+
             }
-            if(app.keyMap[65])
-            {
+            if (app.keyMap[65]) {
                 //move hex -x
                 actions.movePlayerToNextHex(app, new THREE.Vector3(-1.0, 0.0, 1.0));
-                
+
             }
-            if(app.keyMap[83])
-            {
+            if (app.keyMap[83]) {
                 //move hex +z
                 actions.movePlayerToNextHex(app, new THREE.Vector3(0.0, -1.0, 1.0));
-                
+
             }
-            if(app.keyMap[68])
-            {
+            if (app.keyMap[68]) {
                 //move hex -y
                 actions.movePlayerToNextHex(app, new THREE.Vector3(1.0, -1.0, 0.0));
-                
+
             }
 
             render();
@@ -400,11 +396,11 @@ function main() {
         actions.buildMapScene(app,
             {
                 src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
-                loop: 1.0,
-                volume: 0.04,
-                reverb: 0.75,
-                echo: 0.15
-            });
+                showGrid : true,
+                gridScale: 0.04,
+                gridOpacity: 0.75,
+                lineThickness: 0.15
+            }, function () {});
 
         PreLoad();
 
@@ -443,143 +439,146 @@ function main() {
             console.log("Data recieved");
             var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
-            //cues come with a type
-            const cueType = data.type;
-            const body = data.body;
+            //we expect one key at a time
 
-            if (cueType === "master-volume") {
-                Pizzicato.volume = parseFloat(data.body["volume"]);
+            if(!data.type)
+            {
+                console.log("unknown cue type!");
+                return;
             }
 
-            if (cueType === "play-once") {
-                const id = data.body.id;
-                const params = data.body[id];
+            const cue = data;
+            let id = cue.id;
 
-                if (params.type === "audio") {
+            console.log(cue);
 
+            //handle deleted cue
+            if (cue.src == "" && app.cueMap[id]) {
+                if (app.cueMap[id].type === CueType.SOUND) {
+                    if (app.cueMap[id].media) {
+                        app.cueMap[id].media.stop();
+                    }
                 }
+                app.cueMap[id] = null; //??
             }
 
-            if (cueType === "token") {
-                const params = data.body;
-                PlacePeerToken(params.peer, params);
-            }
+            //Stop all audio
+            if (cue.type === CueType.AUDIOKILL) {
 
-            if (cueType === "soundstage") {
-                for (const id in body) {
-
-                    const params = body[id];
-
-                    //handle deleted cue
-                    if (params.src == "" && app.audioMap[id]) {
-                        if (app.audioMap[id].type === "audio") {
-                            if (app.audioMap[id].media) {
-                                app.audioMap[id].media.stop();
-                            }
-                        }
-
-                        app.audioMap[id] = params;
-                    }
-
-                    if (params.type === "model") {
-
-                        if (!app.audioMap[id] || params.src != app.audioMap[id].src) {
-                            //LoadModel(id, params);
-                        }
-
-                        if (params.ui_state === "selected") {
-                            // contentMap[id].media.stop();
-                            console.log("loading model: " + params.src);
-                            LoadModel(id, params)
-
-                        }
-
-                        else if (params.ui_state === "ready") {
-                            //remove
-                        }
-
-                        else if (params.ui_state === "empty") {
-                            //remove
-                        }
-                    }
-
-                    if (params.type === "audio") {
-
-                        if (!app.audioMap[id] || params.src != app.audioMap[id].src) {
-                            LoadSound(id, params);
-                        }
-
-                        else if (params.ui_state === "selected") {
-                            // contentMap[id].media.stop();
-                            UpdateSound(id, params)
-
-                        }
-
-                        else if (params.ui_state === "ready") {
-                            app.audioMap[id].media.stop();
-                        }
-
-                        else if (params.ui_state === "empty") {
-                            app.audioMap[id] = params;
-                        }
-
-                    }
-
-                    if (params.type === "image") {
-                        // console.log(data[id]);
-                        // playerContent.style.backgroundImage = 'url(' + params.src + ')';
-                        if (params.ui_state === "selected") {
-                            if (!app.audioMap[id] || params.src != app.audioMap[id].src) {
-                                console.log("creating new image at: " + params.src);
-
-                                LoadImage(id, params);
-                                app.imageMap[id] = "debug";
-
-                            }
-                        }
-                        else if (params.ui_state === "empty") {
-
-                            app.imageMap[id] = null;
-                        }
-                    }
-
-                    if (params.type === "video") {
-
-                        if (params.ui_state === "selected") {
-                            if (!app.audioMap[id] || params.src != app.audioMap[id].src) {
-                                console.log("creating new video at: " + params.src);
-
-                                var videoCue = document.getElementById("video-cue");
-
-                                if (videoCue) {
-                                    app.playerContent.removeChild(videoCue);
-                                }
-
-                                videoCue = document.createElement("video");
-                                videoCue.className = "videoCue";
-                                videoCue.src = params.src;
-                                videoCue.autoplay = true;
-                                videoCue.id = "video-cue";
-
-                                app.playerContent.appendChild(videoCue);
-
-                                app.audioMap[id] = params;
-                            }
-                        }
-
-                        else if (params.ui_state === "empty") {
-                            var videoCue = document.getElementById("video-cue");
-
-                            if (videoCue) {
-                                app.playerContent.removeChild(videoCue);
-                            }
-
-                            app.audioMap[id] = null;
-                        }
+                for(const cid in app.cueMap)
+                {
+                    if(app.cueMap[cid].type === CueType.SOUND) {
+                        app.cueMap[cid].media.stop();
+                        app.cueMap[cid].state = CueState.READY;
                     }
                 }
             }
 
+            //Change master volume
+            if (cue.type === CueType.VOLUME) {
+                console.log("changing volume: " + cue.volume);
+                Pizzicato.volume = cue.volume;
+            }
+
+            //Handle sound cues
+            if (cue.type === CueType.SOUND) {
+
+                if (!app.cueMap[id] || cue.src !== app.cueMap[id].src) {
+
+                    actions.loadSound(app, cue, function (id) {
+
+                        if (cue.state === CueState.ACTIVE) {
+                            app.cueMap[id].media.play();
+                            app.cueMap[id].state = CueState.PLAYING;
+                        }
+                    })
+                }
+
+                else if (cue.state === CueState.ACTIVE || cue.state === CueState.PLAYING) {
+                    // contentMap[id].media.stop();
+                    console.log("updating sound...");
+                    console.log(cue);
+                    actions.updateSound(app, cue);
+
+                    if (app.cueMap[id].state !== CueState.PLAYING) {
+                        app.cueMap[id].media.play();
+                        app.cueMap[id].state = CueState.PLAYING;
+                    }
+                }
+
+                else if (cue.state === CueState.READY) {
+                    app.cueMap[id].media.stop();
+                }
+
+                else if (cue.state === CueState.EMPTY) {
+                    app.cueMap[id] = null;
+                }
+            }
+
+            //handle model cues
+            if (cue.type === CueType.MODEL) {
+
+                if (!app.cueMap[id] || cue.src !== app.cueMap[id].src) {
+
+                    app.cueMap[id] = cue;
+
+                    actions.loadModel(app, cue, function() {
+
+                        if (cue.state === CueState.ACTIVE) {                    
+                            actions.addModelToScene(app, app.cueMap[id]);
+                            app.cueMap[id].state = CueState.PLAYING;
+                        }
+                    });
+                }
+
+                else if (cue.state === CueState.ACTIVE || cue.state === CueState.PLAYING) {
+                    // contentMap[id].media.stop();
+                    console.log("updating map...");
+                    console.log(cue);
+
+                    //TODO: update model
+                    //actions.updateSound(app, cue);
+
+                    if (app.cueMap[id].state !== CueState.PLAYING) {
+                        actions.addModelToScene(app, app.cueMap[id]);
+                        app.cueMap[id].state = CueState.PLAYING;  
+                    }
+                }
+            }
+
+            //handle map cues
+            if (cue.type === CueType.MAP) {
+
+                if (!app.cueMap[id] || cue.src !== app.cueMap[id].src) {
+
+                    app.cueMap[id] = cue;
+
+                    actions.loadImage(app, cue, function(texture) {
+
+                        if (cue.state === CueState.ACTIVE) {
+                            
+                            actions.buildMapScene(app, cue, function (){
+                                app.cueMap[id].state = CueState.PLAYING;
+                            });
+                        }
+                    });
+                }
+
+                else if (cue.state === CueState.ACTIVE || cue.state === CueState.PLAYING) {
+                    // contentMap[id].media.stop();
+                    console.log("updating map...");
+                    console.log(cue);
+
+                    //TODO: update map
+                    //actions.updateSound(app, cue);
+
+                    if (app.cueMap[id].state !== CueState.PLAYING) {
+                        actions.buildMapScene(app, cue, function (){
+                            app.cueMap[id].state = CueState.PLAYING;
+                        });
+                    }
+                }
+            }
         });
         app.connection.on('close', function () {
             app.status.innerHTML = "Connection reset<br>Awaiting connection...";

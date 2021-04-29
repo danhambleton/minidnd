@@ -11,43 +11,48 @@ class UIHelpers {
 
     buildSoundInspector(app, id) {
 
-        const action = app.cueMap[id];
+        const cue = app.cueMap[id];
 
-        console.log(action);
+        console.log(cue);
+
+        var name = document.createElement("h3");
+        name.innerHTML = cue.name;
+        app.inspector.appendChild(name);
+
 
         const gui =  new Tweakpane({
             container: app.inspector
           });
 
-        gui.addInput(action, "type");
-        gui.addInput(action, "src");
-        gui.addInput(action, "volume", {
+        gui.addInput(cue, "type");
+        gui.addInput(cue, "src");
+        gui.addInput(cue, "volume", {
             min: 0.0,
             max: 1.0,
             step: 0.01
         });
-        gui.addInput(action, "loop");
-        gui.addInput(action, "pan", {
+        gui.addInput(cue, "loop");
+        gui.addInput(cue, "pan", {
             min: -1.0,
             max: 1.0,
             step: 0.01
         });
-        gui.addInput(action, "reverb", {
+        gui.addInput(cue, "reverb", {
             min: 0.0,
             max: 1.0,
             step: 0.01
         });
-        gui.addInput(action, "echo", {
+        gui.addInput(cue, "echo", {
             min: 0.0,
             max: 1.0,
             step: 0.01
         });
-        gui.addInput(action, "fade_in", {
+        gui.addInput(cue, "fade_in", {
             min: 0.0,
             max: 5.0,
             step: 0.01
         });
-        gui.addInput(action, "fade_out", {
+        gui.addInput(cue, "fade_out", {
             min: 0.0,
             max: 5.0,
             step: 0.01
@@ -58,25 +63,30 @@ class UIHelpers {
 
     buildModelInspector(app, id) {
 
-        const action = app.cueMap[id];
+        const cue = app.cueMap[id];
 
-        console.log(action);
+        console.log(cue);
+
+
+        var name = document.createElement("h3");
+        name.innerHTML = cue.name;
+        app.inspector.appendChild(name);
 
         const gui =  new Tweakpane({
             container: app.inspector
           });
 
-        gui.addInput(action, "type");
-        gui.addInput(action, "src");
-        gui.addInput(action, "scale", {
+        gui.addInput(cue, "type");
+        gui.addInput(cue, "src");
+        gui.addInput(cue, "scale", {
             min: 0.001,
             max: 10.0,
             step: 0.01
         });
-        gui.addInput(action, "position");
-        gui.addInput(action, "rotation");
-        gui.addInput(action, "color");
-        gui.addInput(action, "matcap");
+        gui.addInput(cue, "position");
+        gui.addInput(cue, "rotation");
+        gui.addInput(cue, "color");
+        gui.addInput(cue, "matcap");
 
 
 
@@ -84,23 +94,28 @@ class UIHelpers {
 
     buildMapInspector(app, id) {
 
-        const action = app.cueMap[id];
+        const cue = app.cueMap[id];
 
-        console.log(action);
+        console.log(cue);
+
+
+        var name = document.createElement("h3");
+        name.innerHTML = cue.name;
+        app.inspector.appendChild(name);
 
         const gui =  new Tweakpane({
             container: app.inspector
           });
 
-        gui.addInput(action, "type");
-        gui.addInput(action, "src");
-        gui.addInput(action, "showGrid");
-        gui.addInput(action, "gridScale", {
+        gui.addInput(cue, "type");
+        gui.addInput(cue, "src");
+        gui.addInput(cue, "showGrid");
+        gui.addInput(cue, "gridScale", {
             min: 0.001,
             max: 0.5,
             step: 0.01
         });
-        gui.addInput(action, "color");
+        gui.addInput(cue, "color");
 
     }
 }

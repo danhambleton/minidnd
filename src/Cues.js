@@ -1,10 +1,28 @@
 
 import * as THREE from "three";
 
+export const CueType = {
+    SOUND : "sound",
+    MODEL : "model",
+    MAP : "map",
+    VOLUME : "volume",
+    AUDIOKILL : "audio kill",
+    VISUALKILL : "visual kill",
+    PLAYERMOVE : "player move"
+}
+
+export const CueState = {
+        EMPTY : "empty",
+        READY : "ready",
+        ACTIVE : "active",
+        PLAYING : "playing"
+};
+
 class SoundCue {
     constructor(){
 
-        this.type = "sound";
+        this.type = CueType.SOUND;
+        this.name = "";
 
         this.src = "";
         this.id = "";
@@ -15,6 +33,9 @@ class SoundCue {
         this.fade_in = 1.0;
         this.fade_out = 1.0;
         this.loop = false;
+        this.state = null;
+        this.effects = [];
+        this.media = null;
 
     }
 }
@@ -22,15 +43,18 @@ class SoundCue {
 class ModelCue {
     constructor(){
 
-        this.type = "model";
+        this.type = CueType.MODEL;
+        this.name = "";
 
         this.src = "";
         this.id = "";
         this.scale = 1.0;
-        this.position = new THREE.Vector3(0.0, 0.0, 0.0);
-        this.rotation = new THREE.Vector3(0.0, 0.0, 0.0);
-        this.color = new THREE.Color(0.75, 0.75, 0.75, 1.0);
+        this.position = {x : 0, y : 0, z : 0};//new THREE.Vector3(0.0, 0.0, 0.0);
+        this.rotation ={x : 0, y : 0, z : 0};
+        this.color = {r : 1.0, g : 1.0, b : 1.0, a : 1.0};
         this.matcap = "";
+
+        this.state = null;
 
     }
 }
@@ -38,13 +62,18 @@ class ModelCue {
 class MapCue {
     constructor(){
 
-        this.type = "map";
+        this.type = CueType.MAP;
+        this.name = "";
 
         this.src = "";
         this.id = "";
         this.showGrid = false;
         this.gridScale = 0.04;
-        this.color = new THREE.Color(1.0, 1.0, 1.0, 0.1);
+        this.gridOpacity = 0.75;
+        this.lineThickness = 0.18;
+        this.color = {r : 1.0, g : 1.0, b : 1.0, a : 1.0};
+
+        this.state = null;
 
     }
 }

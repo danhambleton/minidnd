@@ -108,8 +108,10 @@ class PeerHelper {
 
     initAsPlayer(app, id) {
         // Create own peer object with connection to shared PeerJS server
+
+        console.log("init as player...");
         app.peer = new Peer(null, {
-            host: id,
+            host: process.env.PEERJS_SERVER,
             path: '/',
             secure: true,
             debug: 2

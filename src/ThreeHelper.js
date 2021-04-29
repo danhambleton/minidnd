@@ -14,7 +14,9 @@ class ThreeHelper {
 
     initScene(app)
     {
-         //create threejs scene
+        THREE.Cache.enabled = true; 
+        
+        //create threejs scene
          app.clientSize = new THREE.Vector2(app.playerContent.offsetWidth, app.playerContent.offsetHeight);
          app.gridScale = 0.25;
          app.gridOpacity = 0.75;
