@@ -38,11 +38,6 @@ function main() {
 
         //app specific
         cueMap: {}, //unlike the sender, this is indexed by unique id.
-        audioMap: {},
-        imageMap: {},
-        audioCache: {},
-        imageCache: {},
-        modelCache: {},
         imageObj: null,
         gridObj: null,
         gridScale: 0.025,
@@ -115,9 +110,9 @@ function main() {
 
         actions.loadModel(app,
             { src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb' },
-            function (assetId) {
+            function (model) {
 
-                app.profileModel = app.modelCache[assetId];
+                app.profileModel = model;
 
                 if (app.profileModel) {
                     console.log("loaded model with children: " + app.profileModel.children.length)
@@ -522,7 +517,9 @@ function main() {
 
                     app.cueMap[id] = cue;
 
-                    actions.loadModel(app, cue, function() {
+                    actions.loadModel(app, cue, function(model) {
+
+                        app.cueMap[id].model = model;
 
                         if (cue.state === CueState.ACTIVE) {                    
                             actions.addModelToScene(app, app.cueMap[id]);
@@ -554,6 +551,8 @@ function main() {
                     app.cueMap[id] = cue;
 
                     actions.loadImage(app, cue, function(texture) {
+
+                        app.cueMap[id].texture = texture;
 
                         if (cue.state === CueState.ACTIVE) {
                             

@@ -53,6 +53,7 @@ class ModelCue {
         this.rotation ={x : 0, y : 0, z : 0};
         this.color = {r : 1.0, g : 1.0, b : 1.0, a : 1.0};
         this.matcap = "";
+        this.model = null;
 
         this.state = null;
 
@@ -72,6 +73,7 @@ class MapCue {
         this.gridOpacity = 0.75;
         this.lineThickness = 0.18;
         this.color = {r : 1.0, g : 1.0, b : 1.0, a : 1.0};
+        this.texture = null;
 
         this.state = null;
 

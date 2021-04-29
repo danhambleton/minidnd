@@ -69,8 +69,7 @@ class Actions {
                     }
                 });
 
-                app.modelCache[params.src] = gltf.scene;
-                callback();
+                callback(gltf.scene);
             },
             // called while loading is progressing
             function (xhr) {
@@ -102,8 +101,6 @@ class Actions {
             function (texture) {
 
                 //TODO: do something here
-
-                app.imageCache[params.src] = texture;
 
                 callback(texture);
             },
@@ -191,7 +188,7 @@ class Actions {
 
     addModelToScene(app, params) {
 
-        var model = app.modelCache[params.src];
+        var model = params.model;
 
         if (model) {
             var obj = model.clone();

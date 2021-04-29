@@ -432,7 +432,7 @@ function main() {
 
     app.saveContentButton.addEventListener('click', function () {
 
-        SaveWorkspace(JSON.stringify(stagedContent));
+        SaveWorkspace(JSON.stringify(app.cueMap));
 
     });
 
@@ -468,22 +468,6 @@ function main() {
 
         //         stagedContent[id].ui_state = "ready";
 
-        //     }
-        // }
-
-        // //send staged content to all connected peers
-        // for (const c of conn) {
-
-        //     if (c && c.open) {
-
-        //         var cue = {
-        //             type: "soundstage",
-        //             body: stagedContent
-        //         }
-
-        //         c.send(cue);
-        //     } else {
-        //         console.log('Connection is closed');
         //     }
         // }
 

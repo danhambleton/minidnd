@@ -41,14 +41,14 @@ class PeerHelper {
                 if (app.conn.length < process.env.MAX_PEERS) {
                     app.conn.push(c);
                     c.send("Connected with host: " + app.peer.id);
-                    addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
+                    // addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
                     app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
 
 
                 }
                 else {
                     c.send("Host has reached max number of peers. Disconnecting...");
-                    addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
+                    // addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
                     setTimeout(function () { c.close(); }, 500);
                 }
 
