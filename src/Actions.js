@@ -12,6 +12,7 @@ import * as MapShaders from "./MapShaders.js";
 import { HexGrid } from "./HexGrid.js"
 import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
 import { PeerHelper } from "./PeerHelper.js"
+import { nanoid } from 'nanoid'
 
 
 class Actions {
@@ -43,6 +44,8 @@ class Actions {
                 // gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
                 var matCapMaterial = null;
+
+                gltf.scene.name = params.name;
 
                 gltf.scene.traverse(function (object) {
                     if (object.isMesh) {
@@ -195,6 +198,16 @@ class Actions {
             // obj.scale.set(params.scale, params.scale, params.scale);
             this.scaleModelHexGrid(obj, params.scale, app.gridScale);
             obj.position.set(params.position.x, params.position.y, params.position.z);
+            obj.visible = params.visible;
+
+
+            obj.traverse(function (object) {
+                if (object.isMesh) {
+
+                    object.userData.root = obj.id;
+                }
+            });
+
             app.scene.add(obj);
             app.transients.push(obj);
             //other params
@@ -211,7 +224,7 @@ class Actions {
             return;
         }
 
-        if(app.scene.getObjectByName(app.peer.id))
+        if(app.playerTokenId && app.scene.getObjectByName(app.playerTokenId))
         {
             console.log("Token already added to scene!");
             return;
@@ -226,7 +239,6 @@ class Actions {
         tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
 
-
         var matCapMaterial = new THREE.MeshMatcapMaterial({
             matcap: app.matcaps.playerTokenMatcap,
             color: app.profileColor
@@ -234,7 +246,8 @@ class Actions {
 
 
         console.log("token cloned:=");
-        tokenObj.name = app.peer.id;
+        tokenObj.name = nanoid(10);
+        app.playerTokenId = tokenObj.name;
         tokenObj.position.set(0.0, 0.0, 0.0);
 
         console.log("changing material colors");
@@ -307,7 +320,7 @@ class Actions {
 
                             hit = intersects[i];
                             
-                            return true;
+                            // return true;
                         }
                     }
                 }
@@ -349,15 +362,35 @@ class Actions {
         }
     }
 
+    setMaterialColor(app, obj, params)
+    {
+        obj.traverse(function (object) {
+            if (object.isMesh) {
+
+
+                object.material = new THREE.MeshMatcapMaterial({
+                    matcap: app.matcaps.playerTokenMatcap,
+                    color: params.color
+                });
+
+                object.material.needsUpdate = true;
+                //object.userData.root = gltf.scene.id;
+                object.castShadow = true;
+                object.receiveShadow = true;
+
+            }
+        });
+    }
+
     movePlayerToNextHex(app, move) {
 
-        if(!app.scene.getObjectByName(app.peer.id))
+        if(!app.scene.getObjectByName(app.playerTokenId))
         {
-            console.log("Token already added to scene!");
+            console.log("Token not added to scene!");
             return;
         }
 
-        var tokenObj = app.scene.getObjectByName(app.peer.id);
+        var tokenObj = app.scene.getObjectByName(app.playerTokenId);
         var hexGrid = new HexGrid();
         var sp = new THREE.Vector3(tokenObj.position.x, tokenObj.position.z, 0.0);
         var hexCenterInCubeCoords = hexGrid.HexRound(hexGrid.CoordToHex(sp, app.gridScale));
@@ -378,8 +411,12 @@ class Actions {
     scaleModelHexGrid(obj, numHexes, gridScale)
     {
         var bbox = new THREE.Box3().setFromObject(obj);
+        console.log("current scale: " + obj.scale.x);
+        
         var dim = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
-        var scaleFactor = (2.0 * numHexes * gridScale) / dim;
+        console.log("base dim: " + dim);
+        var scaleFactor = obj.scale.x * (2.0 * numHexes * gridScale) / dim;
+        console.log("scale factor: " + scaleFactor);
         obj.scale.set(scaleFactor, scaleFactor, scaleFactor);
     }
 

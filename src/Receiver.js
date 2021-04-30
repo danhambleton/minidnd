@@ -47,6 +47,7 @@ function main() {
         profileColor: new THREE.Color("#" + Math.floor(Math.random() * 16777215).toString(16)),
         profileModel: null,
         activeObj: null,
+        playerTokenId: null,
         transients: [],
         keyMap: {},
         mapWidth: 50.0,
@@ -129,7 +130,9 @@ function main() {
         app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
         app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
 
-        actions.pickObjectInScene(app, {});
+        var hit = null;
+        console.log("picking object");
+        actions.pickObjectInScene(app, hit);
 
     }
 
@@ -186,6 +189,8 @@ function main() {
             app.keyMap[e.keyCode] = e.type == 'keydown';
             /* insert conditional here */
 
+            //console.log(e.keyCode);
+
             if (app.keyMap[81]) {
                 //move hex +y
                 actions.movePlayerToNextHex(app, new THREE.Vector3(-1.0, 1.0, 0.0));
@@ -223,41 +228,32 @@ function main() {
         }
 
         app.transformControl = new TransformControls(app.camera, app.renderer.domElement);
-        app.transformControl.setSize(2.0);
+        app.transformControl.setSize(1.0);
         app.transformControl.addEventListener('change', render);
         app.transformControl.addEventListener('dragging-changed', function (event) {
 
             app.controls.enabled = !event.value;
 
-            //send message to host
-            if (app.connection && app.connection.open) {
-
-                var tokenParams = {
-                    peer: app.peer.id,
-                    obj_name: app.activeObj.name,
-                    position: app.activeObj.position,
-                    scale: app.activeObj.scale,
-                    rotation: app.activeObj.rotation,
-                    color: app.profileColor
-                }
-
-                console.log(tokenParams);
-
-                var cue = {
-                    type: "token",
-                    body: JSON.stringify(tokenParams)
-                }
-
-                app.connection.send(cue);
+            if(app.activeObj) {
+                var peerHelper = new PeerHelper();
+                peerHelper.sendObjectTransfromToHost(app, app.activeObj);
             }
 
         });
 
+        //Create transform controller
         app.playerContent.addEventListener("click", function (event) {
 
-            SelectToken(event);
-            render();
+            if(app.keyMap[16]) {
+                console.log("selecting");
+                SelectToken(event);
+                render();
+            }  
+            else {
 
+                app.scene.remove(app.transformControl);
+
+            }  
         });
 
         //add handler
@@ -390,10 +386,10 @@ function main() {
                     console.log('cloning profile model');
                     obj = app.profileModel.clone();   
                     obj.name = cue.objName;
-                    obj.material = new MeshMatcapMaterial({
-                        matcap: app.matcaps.playerTokenMatcap,
-                        color : col
-                    })
+
+                    actions.setMaterialColor(app, obj, {color: col});
+
+                    app.transients.push(obj);
 
                     app.scene.add(obj);
                 }
@@ -401,7 +397,6 @@ function main() {
                 obj.position.set(pos.x, pos.y, pos.z);
                 obj.scale.set(scale.x, scale.y, scale.z);
 
-   
             }
 
             //Change master volume
@@ -470,6 +465,15 @@ function main() {
 
                     //TODO: update model
                     //actions.updateSound(app, cue);
+                    var obj = app.scene.getObjectByName(cue.name);
+                    if(obj) {
+
+                        obj.position.set(cue.position.x, cue.position.y, cue.position.z);
+                        actions.scaleModelHexGrid(obj, cue.scale, app.gridScale);
+                        obj.rotation.set(cue.rotation.x, cue.rotation.y, cue.rotation.z);
+                        obj.visible = cue.visible;
+
+                    }
 
                     if (app.cueMap[id].state !== CueState.PLAYING) {
                         actions.addModelToScene(app, app.cueMap[id]);
@@ -506,6 +510,13 @@ function main() {
 
                     //TODO: update map
                     //actions.updateSound(app, cue);
+                    app.gridScale = cue.gridScale;
+                    app.gridOpacity = cue.gridOpacity;
+                    app.shaderUniforms.u_grid_spacing.value = cue.lineThickness;
+                    app.shaderUniforms.u_grid_scale.value = app.gridScale
+                    app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
+
+                    app.gridObj.material.needsUpdate = true;
 
                     if (app.cueMap[id].state !== CueState.PLAYING) {
                         actions.buildMapScene(app, cue, function (){

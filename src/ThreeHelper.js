@@ -35,7 +35,7 @@ class ThreeHelper {
          light.shadow.mapSize.width = 1024;
          light.shadow.mapSize.height = 1024;
  
-         const d = 10;
+         const d = 50;
  
          light.shadow.camera.left = - d;
          light.shadow.camera.right = d;

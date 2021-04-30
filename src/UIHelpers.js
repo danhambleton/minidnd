@@ -85,6 +85,7 @@ class UIHelpers {
         });
         gui.addInput(cue, "position");
         gui.addInput(cue, "rotation");
+        gui.addInput(cue, "visible");
         gui.addInput(cue, "color");
         gui.addInput(cue, "matcap");
 
