@@ -69,10 +69,10 @@ img {
 }
 
 .box {
-    background-color: #444;
+    background-color: rgba(15, 15, 15, 0.171);
     color: #fff;
     border-radius: 5px;
-    padding: 0px;
+    padding: 5px;
     font-size: 150%;
 
     text-overflow: ellipsis;

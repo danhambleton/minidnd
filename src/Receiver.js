@@ -40,16 +40,17 @@ function main() {
         cueMap: {}, //unlike the sender, this is indexed by unique id.
         imageObj: null,
         gridObj: null,
-        gridScale: 0.025,
+        gridScale: 1.0,
         gridOpacity: 0.75,
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
-        profileColor: Math.floor(Math.random() * 16777215).toString(16),
+        profileColor: new THREE.Color("#" + Math.floor(Math.random() * 16777215).toString(16)),
         profileModel: null,
         activeObj: null,
         transients: [],
         keyMap: {},
-        mapWidth: 5.0,
+        mapWidth: 50.0,
+        cameraOffset: 30.0,
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -120,85 +121,6 @@ function main() {
 
                 //scale?
             });
-    }
-
-    function PlacePeerToken(id, params) {
-
-        var r = 0.3 / app.gridScale;
-
-        console.log(params);
-
-        var paramsObj = JSON.parse(params);
-
-        var np = new THREE.Vector3(
-            paramsObj.position.x,
-            paramsObj.position.y,
-            paramsObj.position.z
-        );
-
-        var ns = new THREE.Vector3(
-            paramsObj.scale.x,
-            paramsObj.scale.y,
-            paramsObj.scale.z
-        );
-
-        var nr = new THREE.Vector3(
-            paramsObj.rotation._x,
-            paramsObj.rotation._y,
-            paramsObj.rotation._z
-        )
-
-        var peerColor = new THREE.Color(
-            "#" + paramsObj.color
-        );
-
-        console.log("peer token params:" + params);
-        console.log(nr);
-
-        var tokenObj = app.scene.getObjectByName(paramsObj.obj_name);
-
-        if (!tokenObj) {
-            console.log("creating token object");
-            tokenObj = app.profileModel.clone();
-
-            tokenObj.name = paramsObj.obj_name;
-            tokenObj.position.set(np.x, np.y, np.z);
-            tokenObj.scale.set(ns.x, ns.y, ns.z);
-            tokenObj.rotation.set(nr.x, nr.y, nr.z);
-
-            //create a new material
-            var newMat = new THREE.MeshMatcapMaterial({
-                matcap: app.matcaps.playerTokenMatcap
-            })
-
-            tokenObj.traverse(function (object) {
-                if (object.isMesh) {
-                    object.material = newMat;
-                    object.material.color.set(peerColor);
-                    object.material.needsUpdate = true;
-                    object.userData.root = tokenObj.id;
-                    object.castShadow = true;
-                    object.receiveShadow = true;
-
-                }
-                object.userData.isTransient = true;
-            });
-            app.transients.push(tokenObj);
-            tokenObj.userData.isTransient = true;
-            app.scene.add(tokenObj);
-
-        }
-        else {
-            //console.log("have token object");
-            console.log("updating token object: " + paramsObj.obj_name);
-            tokenObj.position.set(np.x, np.y, np.z);
-            tokenObj.scale.set(ns.x, ns.y, ns.z);
-            tokenObj.rotation.set(nr.x, nr.y, nr.z);
-
-        }
-
-        app.renderer.render(app.scene, app.camera);
-
     }
 
     function SelectToken(event) {
@@ -295,6 +217,8 @@ function main() {
 
             }
 
+
+
             render();
         }
 
@@ -363,26 +287,7 @@ function main() {
             //LoadSound(null, null, event);
 
             //send message to host
-            // if (app.connection && app.connection.open) {
-
-            //     var tokenParams = {
-            //         peer: app.peer.id,
-            //         obj_name: app.activeObj.name,
-            //         position: app.activeObj.position,
-            //         scale: app.activeObj.scale,
-            //         rotation: app.activeObj.rotation,
-            //         color: app.profileColor
-            //     }
-
-            //     console.log(tokenParams);
-
-            //     var cue = {
-            //         type: "token",
-            //         body: JSON.stringify(tokenParams)
-            //     }
-
-            //     app.connection.send(cue);
-            // }
+            
 
             // render();
 
@@ -392,7 +297,7 @@ function main() {
             {
                 src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
                 showGrid : true,
-                gridScale: 0.04,
+                gridScale: 1.0,
                 gridOpacity: 0.75,
                 lineThickness: 0.15
             }, function () {});
@@ -467,6 +372,36 @@ function main() {
                         app.cueMap[cid].state = CueState.READY;
                     }
                 }
+            }
+
+            //Handle player moving an object
+            if( cue.type === CueType.PLAYERMOVE ) {
+
+                console.log("move other player: " + cue);
+
+                var obj = app.scene.getObjectByName(cue.objName);
+
+                var pos = new THREE.Vector3(cue.position.x, cue.position.y, cue.position.z);
+                var scale = new THREE.Vector3(cue.scale.x, cue.scale.y, cue.scale.z);
+                var col = new THREE.Color(cue.color.r, cue.color.g, cue.color.b);
+
+                if(!obj) {
+
+                    console.log('cloning profile model');
+                    obj = app.profileModel.clone();   
+                    obj.name = cue.objName;
+                    obj.material = new MeshMatcapMaterial({
+                        matcap: app.matcaps.playerTokenMatcap,
+                        color : col
+                    })
+
+                    app.scene.add(obj);
+                }
+
+                obj.position.set(pos.x, pos.y, pos.z);
+                obj.scale.set(scale.x, scale.y, scale.z);
+
+   
             }
 
             //Change master volume
@@ -557,6 +492,7 @@ function main() {
                         if (cue.state === CueState.ACTIVE) {
                             
                             actions.buildMapScene(app, cue, function (){
+                                app.gridScale = app.cueMap[id].gridScale;
                                 app.cueMap[id].state = CueState.PLAYING;
                             });
                         }

@@ -11,7 +11,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import * as MapShaders from "./MapShaders.js";
 import { HexGrid } from "./HexGrid.js"
 import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
-
+import { PeerHelper } from "./PeerHelper.js"
 
 
 class Actions {
@@ -192,7 +192,8 @@ class Actions {
 
         if (model) {
             var obj = model.clone();
-            obj.scale.set(params.scale, params.scale, params.scale);
+            // obj.scale.set(params.scale, params.scale, params.scale);
+            this.scaleModelHexGrid(obj, params.scale, app.gridScale);
             obj.position.set(params.position.x, params.position.y, params.position.z);
             app.scene.add(obj);
             app.transients.push(obj);
@@ -224,13 +225,11 @@ class Actions {
         var scaleFactor = 1.75 * app.gridScale / baseDim;
         tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-        var col = new THREE.Color(
-            "#" + app.profileColor
-        );
+
 
         var matCapMaterial = new THREE.MeshMatcapMaterial({
             matcap: app.matcaps.playerTokenMatcap,
-            color: col
+            color: app.profileColor
         });
 
 
@@ -371,6 +370,17 @@ class Actions {
         var newPos = hexGrid.HexToCoord(newHexCenter, app.gridScale);
 
         tokenObj.position.set(newPos.x, 0.0, newPos.y);
+
+        var peerHelper = new PeerHelper();
+        peerHelper.sendObjectTransfromToHost(app, tokenObj);
+    }
+
+    scaleModelHexGrid(obj, numHexes, gridScale)
+    {
+        var bbox = new THREE.Box3().setFromObject(obj);
+        var dim = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
+        var scaleFactor = (2.0 * numHexes * gridScale) / dim;
+        obj.scale.set(scaleFactor, scaleFactor, scaleFactor);
     }
 
     sendActionToHost(app, action) {
@@ -420,11 +430,13 @@ class Actions {
             app.imageObj.receiveShadow = true;
             app.scene.add(app.imageObj);
 
+            app.controls.reset();
+
             app.camera.rotation.set(-Math.PI / 2, 0.0, 0.0);
-            app.camera.position.set(0.0, 10.0, 0.0);
+            app.camera.position.set(0.0, app.cameraOffset, 0.0);
             app.camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
 
-            app.controls.reset();
+            console.log("camera pos: " + app.camera.position.y);
 
             app.scene.remove(app.scene.getObjectByName("GridObj"));
 
@@ -455,7 +467,7 @@ class Actions {
                 );
                 app.transients.push(app.gridObj);
 
-                app.gridObj.position.set(0.0, 0.0001, 0.0);
+                app.gridObj.position.set(0.0, 0.01, 0.0);
                 app.gridObj.name = "GridObj";
                 app.gridObj.rotation.set(-Math.PI / 2, 0.0, 0.0);
 

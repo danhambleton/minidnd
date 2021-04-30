@@ -1,8 +1,65 @@
+import { nanoid } from "nanoid";
 import Peer, * as peer from "peerjs"
+import { CueType } from "./Cues";
 
 class PeerHelper {
 
     constructor() {
+
+    }
+
+    sendObjectTransfromToHost(app, obj) {
+
+        if (app.connection && app.connection.open) {
+
+                var cue = {
+                    type : CueType.PLAYERMOVE,
+                    id : nanoid(10),
+                    peer: app.peer.id,
+                    objName: obj.name,
+                    position: {
+                        x : obj.position.x,
+                        y : obj.position.y,
+                        z : obj.position.z
+                    },
+                    scale: {
+                        x : obj.scale.x,
+                        y : obj.scale.y,
+                        z : obj.scale.z
+                    },
+                    rotation: {
+                        x : obj.rotation.x,
+                        y : obj.rotation.y,
+                        z : obj.rotation.z
+                    },
+                    color: {
+                        r : app.profileColor.r,
+                        g : app.profileColor.g,
+                        b : app.profileColor.b
+                    }
+                }
+
+                console.log("sending object move: " + cue);
+
+                app.connection.send(cue);
+            }
+
+    }
+
+    sendObjectTransformToPeers(app, params) {
+
+        //send staged content to all connected peers
+        console.log("sending object to peers");
+        for (const c of app.conn) {
+
+            if (c && c.open) {
+
+                c.send(params);
+
+            } else {
+                console.log('Connection is closed');
+            }
+        }
 
     }
 
@@ -68,9 +125,8 @@ class PeerHelper {
 
                 console.log(data);
 
-                if(data.type === "token")
-                {
-                    
+                if(data.type === CueType.PLAYERMOVE)
+                {              
                     for (const oc of app.conn) {
 
                         if (oc && oc.open && oc !== c ) {

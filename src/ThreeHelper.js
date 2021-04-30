@@ -46,8 +46,8 @@ class ThreeHelper {
  
          app.scene.add(light);
  
-         const near = 2;
-         const far = 5;
+         const near = 3.0 * app.imageWidth;
+         const far = 3.0 * app.imageWidth;
          const color = 'black';
          app.scene.fog = new THREE.Fog(color, near, far);
          app.scene.background = new THREE.Color(color);
@@ -56,7 +56,7 @@ class ThreeHelper {
          app.scene.add( ambLight );
  
  
-         app.camera = new THREE.PerspectiveCamera(45, app.clientSize.x / app.clientSize.y, 0.1, 100);
+         app.camera = new THREE.PerspectiveCamera(35, app.clientSize.x / app.clientSize.y, 0.1, 1000.0);
          var aspect = app.clientSize.y / app.clientSize.x;
         //  app.camera = new THREE.OrthographicCamera(-5.0, 5.0, aspect * 5.0, aspect * -5.0, 0.0, 100.0);
          app.camera.name = "MainCamera";
@@ -68,6 +68,8 @@ class ThreeHelper {
          app.renderer.setSize(app.clientSize.x, app.clientSize.y);
         //  console.log("test renderer");
          app.playerContent.appendChild(app.renderer.domElement);
+
+
  
          //orbit controls
          app.controls = new MapControls(app.camera, app.renderer.domElement);
@@ -76,17 +78,19 @@ class ThreeHelper {
          app.controls.dampingFactor = 0.05;
          app.controls.screenSpacePanning = false;
          app.controls.minDistance = 0.5;
-         app.controls.maxDistance = 3.0;
+         app.controls.maxDistance = 3.0 * app.cameraOffset;
          app.controls.maxPolarAngle = Math.PI / 6;
          app.controls.maxAzimuthAngle = 0.0;
          app.controls.minAzimuthAngle = 0.0;
          app.controls.zoomSpeed = 0.5;
          
- 
-         app.camera.position.set(0, 10, 0);
+         app.camera.position.set(0, app.cameraOffset, 0);
          app.camera.lookAt(0.0, 0.0, 0.0);
+         app.controls.reset();
  
-         app.controls.update();
+
+ 
+         //app.controls.update();
  
          //hex grid plane
          app.debugParams = {

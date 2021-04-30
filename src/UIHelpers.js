@@ -112,7 +112,7 @@ class UIHelpers {
         gui.addInput(cue, "showGrid");
         gui.addInput(cue, "gridScale", {
             min: 0.001,
-            max: 0.5,
+            max: 5.0,
             step: 0.01
         });
         gui.addInput(cue, "color");
