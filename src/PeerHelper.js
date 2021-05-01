@@ -63,7 +63,7 @@ class PeerHelper {
 
     }
 
-    initAsHost(app, id) {
+    initAsHost(app, loadWorkspace) {
 
         // Create own peer object with connection to shared PeerJS server
         app.peer = new Peer(process.env.HOST_ID, {
@@ -86,9 +86,7 @@ class PeerHelper {
             app.hostID.innerHTML = "ID: " + app.peer.id;
             app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
 
-            //load the content from manifest on server
-            // LoadWorkspace(LoadContentGrid);
-
+            loadWorkspace();
         });
         app.peer.on('connection', function (c) {
 

@@ -2,10 +2,26 @@ import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
 import * as Tweakpane from 'tweakpane'
 import * as THREE from "three";
 import { GroundStation } from "aws-sdk";
+import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
 
 class UIHelpers {
     constructor() {
 
+    }
+
+    sendCue (app, cue) {
+        
+        //send staged content to all connected peers
+        for (const c of app.conn) {
+
+            if (c && c.open) {
+
+                c.send(cue);
+
+            } else {
+                console.log('Connection is closed');
+            }
+        }
     }
 
 
@@ -58,6 +74,28 @@ class UIHelpers {
             step: 0.01
         });
 
+        const btn = gui.addButton({
+            title: 'DELETE'
+          });
+
+        btn.on('click', () => {
+            console.log("deleting cue...: " + app.cueMap[id]);
+            var b = document.getElementById(id);
+            if(b)
+            {
+               b.className = "cueElementEmpty";
+               b.innerHTML = "";
+               b.style.background = "";
+               this.sendCue(app, {type: CueType.DELETE, target: app.cueMap[id]});
+               app.cueMap[id] = null;
+
+               while (app.inspector.firstChild) {
+                app.inspector.removeChild(app.inspector.firstChild);
+            }
+            }
+        });
+
+
 
     }
 
@@ -89,6 +127,26 @@ class UIHelpers {
         gui.addInput(cue, "color");
         gui.addInput(cue, "matcap");
 
+        const btn = gui.addButton({
+            title: 'DELETE'
+          });
+
+          btn.on('click', () => {
+            console.log("deleting cue...: " + app.cueMap[id]);
+            var b = document.getElementById(id);
+            if(b)
+            {
+               b.className = "cueElementEmpty";
+               b.innerHTML = "";
+               b.style.background = "";
+               this.sendCue(app, {type: CueType.DELETE, target: app.cueMap[id]});
+               app.cueMap[id] = null;
+
+               while (app.inspector.firstChild) {
+                app.inspector.removeChild(app.inspector.firstChild);
+            }
+            }
+        });
 
 
     }
@@ -117,6 +175,27 @@ class UIHelpers {
             step: 0.01
         });
         gui.addInput(cue, "color");
+
+        const btn = gui.addButton({
+            title: 'DELETE'
+          });
+
+          btn.on('click', () => {
+            console.log("deleting cue...: " + app.cueMap[id]);
+            var b = document.getElementById(id);
+            if(b)
+            {
+               b.className = "cueElementEmpty";
+               b.innerHTML = "";
+               b.style.background = "";
+               this.sendCue(app, {type: CueType.DELETE, target: app.cueMap[id]});
+               app.cueMap[id] = null;
+
+               while (app.inspector.firstChild) {
+                app.inspector.removeChild(app.inspector.firstChild);
+            }
+            }
+        });
 
     }
 }

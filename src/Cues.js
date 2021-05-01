@@ -8,7 +8,8 @@ export const CueType = {
     VOLUME : "volume",
     AUDIOKILL : "audio kill",
     VISUALKILL : "visual kill",
-    PLAYERMOVE : "player move"
+    PLAYERMOVE : "player move",
+    DELETE : "delete"
 }
 
 export const CueState = {
@@ -55,6 +56,7 @@ class ModelCue {
         this.matcap = "";
         this.model = null;
         this.visible = true;
+        this.instances = [];
 
         this.state = null;
 

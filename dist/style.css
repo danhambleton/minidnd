@@ -156,7 +156,7 @@ img {
         min-width: 150px;
         /* width: 200px;
         height: 150px; */
-        object-fit: contain;
+        object-fit: scale-down;
         outline: none;
         text-overflow: ellipsis;
         overflow: hidden;
@@ -171,7 +171,7 @@ img {
         min-width: 150px;
         /* width: 200px;
         height: 150px; */
-        object-fit: contain;
+        object-fit: scale-down;
         outline: none;
         text-overflow: ellipsis;
         overflow: hidden;

@@ -13,6 +13,7 @@ import { HexGrid } from "./HexGrid.js"
 import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
 import { PeerHelper } from "./PeerHelper.js"
 import { nanoid } from 'nanoid'
+import { IoTFleetHub } from "aws-sdk";
 
 
 class Actions {
@@ -199,7 +200,7 @@ class Actions {
             this.scaleModelHexGrid(obj, params.scale, app.gridScale);
             obj.position.set(params.position.x, params.position.y, params.position.z);
             obj.visible = params.visible;
-
+            obj.userData.cueID = params.id;
 
             obj.traverse(function (object) {
                 if (object.isMesh) {

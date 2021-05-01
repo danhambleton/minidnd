@@ -209,6 +209,21 @@ function main() {
         });
     }
 
+    function sendCue (cue) {
+        
+        //send staged content to all connected peers
+        for (const c of app.conn) {
+
+            if (c && c.open) {
+
+                c.send(cue);
+
+            } else {
+                console.log('Connection is closed');
+            }
+        }
+    }
+
     function BuildContentGrid() {
         var stagingArea = document.getElementById("contentGrid");
         for (var i = 0; i < process.env.MAX_SLOTS; i++) {
@@ -222,7 +237,7 @@ function main() {
             setupDragAndDrop(b, UploadAsset);
 
             b.addEventListener('click', function () {
-
+                let id = this.id;
                 if (app.cueMap[this.id]) {
                     //clear ui
                     while (app.inspector.firstChild) {
@@ -232,15 +247,15 @@ function main() {
                     var uiHelper = new UIHelpers();
                     if (app.cueMap[this.id].type === "sound") {
                         console.log("building inspector");
-                        uiHelper.buildSoundInspector(app, this.id)
+                        uiHelper.buildSoundInspector(app, id)
                     }
                     if (app.cueMap[this.id].type === "model") {
                         console.log("building inspector");
-                        uiHelper.buildModelInspector(app, this.id)
+                        uiHelper.buildModelInspector(app, id)
                     }
                     if (app.cueMap[this.id].type === "map") {
                         console.log("building inspector");
-                        uiHelper.buildMapInspector(app, this.id)
+                        uiHelper.buildMapInspector(app, id)
                     }
 
                     if (app.cueMap[this.id].state === CueState.READY) {
@@ -290,20 +305,7 @@ function main() {
         }
     }
 
-    function sendCue (cue) {
-        
-        //send staged content to all connected peers
-        for (const c of app.conn) {
 
-            if (c && c.open) {
-
-                c.send(cue);
-
-            } else {
-                console.log('Connection is closed');
-            }
-        }
-    }
 
     function sendAllCues () {
 
@@ -337,7 +339,9 @@ function main() {
     function initialize() {
 
         var peerHelper = new PeerHelper();
-        peerHelper.initAsHost(app, null);
+        peerHelper.initAsHost(app, function(){
+            LoadWorkspace(LoadContentGrid);
+        });
     };
 
 
@@ -399,6 +403,8 @@ function main() {
 
     //Build content grid
     BuildContentGrid();
+
+    
 
     // Listen for enter in message box
     app.sendMessageBox.addEventListener('keypress', function (e) {

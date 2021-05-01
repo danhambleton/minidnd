@@ -291,8 +291,8 @@ function main() {
 
         actions.buildMapScene(app,
             {
-                src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/douganshole.jpg',
-                showGrid : true,
+                src: 'https://danbleton.nyc3.digitaloceanspaces.com/circle-of-fire-and-grace/cofg.png',
+                showGrid : false,
                 gridScale: 1.0,
                 gridOpacity: 0.75,
                 lineThickness: 0.15
@@ -349,11 +349,44 @@ function main() {
             console.log(cue);
 
             //handle deleted cue
-            if (cue.src == "" && app.cueMap[id]) {
+
+            if (cue.type === CueType.DELETE) {
+                var targetCue = cue.target;
+                let id = targetCue.id;
                 if (app.cueMap[id].type === CueType.SOUND) {
                     if (app.cueMap[id].media) {
                         app.cueMap[id].media.stop();
                     }
+                }
+                if (app.cueMap[id].type === CueType.MODEL) {
+  
+                    if(app.cueMap[id].state === CueState.PLAYING)
+                    {
+                        
+                        app.scene.traverse(function(object) {
+
+                            if(object.userData.cueID === app.cueMap[id].id)
+                            {
+                                app.scene.remove(object);
+                            }
+
+                        });
+                    }
+                }
+                if (app.cueMap[id].type === CueType.MAP) {
+  
+                    if(app.cueMap[id].state === CueState.PLAYING)
+                    {
+                        actions.buildMapScene(app, {
+                            src: "",
+                            showGrid: false
+                        }, function () {
+    
+                            console.log("deleted scene");
+    
+                        });
+                    }
+
                 }
                 app.cueMap[id] = null; //??
             }
