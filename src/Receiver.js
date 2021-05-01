@@ -2,7 +2,7 @@ import * as L from "leaflet"
 import Peer, * as peer from "peerjs"
 import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
-import { MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry, Vector3 } from "three";
+import { MeshLambertMaterial, MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry, Vector3 } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
@@ -15,6 +15,7 @@ import { HexGrid } from "./HexGrid.js"
 import { PeerHelper } from "./PeerHelper.js"
 import { ThreeHelper } from "./ThreeHelper.js";
 import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
+import { UIHelpers } from "./UIHelpers.js";
 
 main();
 
@@ -45,6 +46,7 @@ function main() {
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
         profileColor: new THREE.Color("#" + Math.floor(Math.random() * 16777215).toString(16)),
+        profileColorParams : {r : 0.0, g : 0.0, b : 0.0},
         profileModel: null,
         activeObj: null,
         playerTokenId: null,
@@ -52,6 +54,15 @@ function main() {
         keyMap: {},
         mapWidth: 50.0,
         cameraOffset: 30.0,
+        profileModelSrc : "",
+        profileModelOptions : {
+            HumanFemaleRogue : "https://danbleton.nyc3.digitaloceanspaces.com/public/Human_Female_Rogue_4.glb",
+            HumanMaleFighter : "https://danbleton.nyc3.digitaloceanspaces.com/public/Human_Male_Fighter.glb",
+            HumanMaleWizard : "https://danbleton.nyc3.digitaloceanspaces.com/public/Human_Wizard.glb" ,
+            HumanMaleRanger : "https://danbleton.nyc3.digitaloceanspaces.com/public/Human_Male_Ranger_4.glb",
+            HumanFemaleWarlock : "https://danbleton.nyc3.digitaloceanspaces.com/public/Human_Female_Warlock.glb"
+        },
+        profileName : "",
 
         //ui
         recvId: document.getElementById("receiver-id"),
@@ -111,7 +122,7 @@ function main() {
             });
 
         actions.loadModel(app,
-            { src: 'https://danbleton.nyc3.digitaloceanspaces.com/public/DesertWarrior.glb' },
+            { src: app.profileModelSrc },
             function (model) {
 
                 app.profileModel = model;
@@ -143,6 +154,8 @@ function main() {
 
         var threeHelper = new ThreeHelper();
         threeHelper.initScene(app);
+
+        new UIHelpers().buildProfileOptions(app);
 
 
         function resizeRendererToDisplaySize() {
@@ -413,22 +426,63 @@ function main() {
                 var pos = new THREE.Vector3(cue.position.x, cue.position.y, cue.position.z);
                 var scale = new THREE.Vector3(cue.scale.x, cue.scale.y, cue.scale.z);
                 var col = new THREE.Color(cue.color.r, cue.color.g, cue.color.b);
+                var rot = new THREE.Vector3(cue.rotation.x, cue.rotation.y, cue.rotation.z);
 
-                if(!obj) {
+                if(!obj ) {
 
                     console.log('cloning profile model');
-                    obj = app.profileModel.clone();   
-                    obj.name = cue.objName;
 
-                    actions.setMaterialColor(app, obj, {color: col});
+                    for(const transient of app.transients)
+                    {
+                        if(transient.userData.owner === cue.peer && transient.userData.isToken === true)
+                        {
+                            app.scene.remove(transient);
+                            console.log("removed old token obj");
+                        }
+                    }
+  
 
-                    app.transients.push(obj);
+                    actions.loadModel(app, {src : cue.src, name : cue.id}, function(model){
 
-                    app.scene.add(obj);
+                        obj = model.clone(); 
+                        obj.name = cue.objName;
+                        obj.userData.src = cue.src;
+                        obj.userData.owner = cue.peer;
+                        obj.userData.isToken = true;
+
+                        var baseMat = new MeshLambertMaterial({
+                            color : col
+                        })
+                        obj.traverse(function(object){
+
+                            if(object.isMesh) {
+                                object.material = baseMat;
+                                object.material.needsUpdate = true;
+                                object.castShadow = true;
+                                object.receiveShadow = true;
+                            }
+
+                        });
+
+                        app.transients.push(obj);
+                        
+                        obj.position.set(pos.x, pos.y, pos.z);
+                        obj.scale.set(scale.x, scale.y, scale.z);
+                        obj.rotation.set(rot.x, rot.y, rot.z);
+
+                        app.scene.add(obj);
+
+                    });
+
+
+                }
+                else {
+
+                    obj.position.set(pos.x, pos.y, pos.z);
+                    obj.scale.set(scale.x, scale.y, scale.z);
+                    obj.rotation.set(rot.x, rot.y, rot.z);
                 }
 
-                obj.position.set(pos.x, pos.y, pos.z);
-                obj.scale.set(scale.x, scale.y, scale.z);
 
             }
 

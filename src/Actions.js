@@ -1,7 +1,7 @@
 import Peer, * as peer from "peerjs"
 import * as Pizzicato from "pizzicato"
 import * as THREE from "three";
-import { BoxGeometry, Mesh, MeshBasicMaterial, MeshMatcapMaterial, NearestMipMapLinearFilter, TetrahedronGeometry, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, MeshMatcapMaterial, NearestMipMapLinearFilter, OctahedronBufferGeometry, TetrahedronGeometry, Vector3 } from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";
@@ -45,6 +45,7 @@ class Actions {
                 // gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
                 var matCapMaterial = null;
+                
 
                 gltf.scene.name = params.name;
 
@@ -80,7 +81,7 @@ class Actions {
 
                 var msg = (xhr.loaded / xhr.total * 100) + '% loaded';
                 app.status.innerHTML = msg;
-                console.log(msg);
+                // console.log(msg);
 
             },
             // called when loading has errors
@@ -201,6 +202,7 @@ class Actions {
             obj.position.set(params.position.x, params.position.y, params.position.z);
             obj.visible = params.visible;
             obj.userData.cueID = params.id;
+            obj.name = params.id;
 
             obj.traverse(function (object) {
                 if (object.isMesh) {
@@ -240,14 +242,19 @@ class Actions {
         tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
 
-        var matCapMaterial = new THREE.MeshMatcapMaterial({
-            matcap: app.matcaps.playerTokenMatcap,
-            color: app.profileColor
+        // var matCapMaterial = new THREE.MeshMatcapMaterial({
+        //     matcap: app.matcaps.playerTokenMatcap,
+        //     color: app.profileColor
+        // });
+
+        var matCapMaterial = new THREE.MeshLambertMaterial({
+            color: app.profileColor,
         });
 
 
         console.log("token cloned:=");
         tokenObj.name = nanoid(10);
+
         app.playerTokenId = tokenObj.name;
         tokenObj.position.set(0.0, 0.0, 0.0);
 
@@ -258,7 +265,8 @@ class Actions {
                 object.material = matCapMaterial;
                 object.material.needsUpdate = true;
                 object.userData.root = tokenObj.id;
-                object.castShadow = true;           
+                object.castShadow = true; 
+                object.receiveShadow = true;          
             }
         });
 
@@ -369,10 +377,12 @@ class Actions {
             if (object.isMesh) {
 
 
-                object.material = new THREE.MeshMatcapMaterial({
-                    matcap: app.matcaps.playerTokenMatcap,
-                    color: params.color
-                });
+                // object.material = new THREE.MeshMatcapMaterial({
+                //     matcap: app.matcaps.playerTokenMatcap,
+                //     color: params.color
+                // });
+
+                object.material.color = params.color;
 
                 object.material.needsUpdate = true;
                 //object.userData.root = gltf.scene.id;

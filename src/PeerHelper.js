@@ -10,6 +10,8 @@ class PeerHelper {
 
     sendObjectTransfromToHost(app, obj) {
 
+        // var reload = obj.reload;
+
         if (app.connection && app.connection.open) {
 
                 var cue = {
@@ -17,6 +19,8 @@ class PeerHelper {
                     id : nanoid(10),
                     peer: app.peer.id,
                     objName: obj.name,
+                    src : app.profileModelSrc,
+                    reload : obj.reload,
                     position: {
                         x : obj.position.x,
                         y : obj.position.y,
@@ -43,6 +47,8 @@ class PeerHelper {
 
                 app.connection.send(cue);
             }
+
+            obj.reload = false;
 
     }
 

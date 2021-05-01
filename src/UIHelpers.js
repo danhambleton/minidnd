@@ -3,6 +3,7 @@ import * as Tweakpane from 'tweakpane'
 import * as THREE from "three";
 import { GroundStation } from "aws-sdk";
 import { SoundCue, ModelCue, MapCue, CueState, CueType } from "./Cues.js"
+import { Actions } from "./Actions.js"
 
 class UIHelpers {
     constructor() {
@@ -22,6 +23,62 @@ class UIHelpers {
                 console.log('Connection is closed');
             }
         }
+    }
+
+    buildProfileOptions(app) { 
+
+        const gui =  new Tweakpane({
+            // container: app.playerContent
+          });
+
+          const f1 = gui.addFolder({
+            title: 'Settings',
+          });
+
+        f1.addInput(app, "profileName");
+        var src = f1.addInput(app, "profileModelSrc" , {
+            options : app.profileModelOptions
+        });
+        var col = f1.addInput(app, "profileColorParams");
+        col.on("change", () => {
+            app.profileColor = new THREE.Color(`rgb(${parseInt(app.profileColorParams.r)}, ${parseInt(app.profileColorParams.g)}, ${parseInt(app.profileColorParams.b)})`);
+            var actions = new Actions();
+            var newTokenObj = app.scene.getObjectById(app.playerTokenId);
+            if(newTokenObj) {
+                actions.setMaterialColor(app, newTokenObj, {color : app.profileColor});
+            }
+
+        });
+
+        src.on("change", () => {
+
+            // console.log(app.profileName);
+            // console.log(app.profileModelOptions);
+            // console.log(app.profileColor);
+
+
+            var actions = new Actions();
+            actions.loadModel(app, {src : app.profileModelSrc}, function(model) {
+
+                app.profileModel = model;
+
+                var tokenObj = app.scene.getObjectByName(app.playerTokenId);
+                if(tokenObj) {
+
+                    var pos = tokenObj.position;
+                    var rot = tokenObj.rotation;
+                    var scale = tokenObj.scale;
+                    app.scene.remove(tokenObj);
+                    actions.addPlayerTokenToScene(app, null, function(id) {
+
+                        app.scene.getObjectByName(id).userData.reload = true;
+
+                    });
+
+                }
+
+            });
+        });
     }
 
 
