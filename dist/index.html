@@ -7,18 +7,43 @@
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
-		<h1>Peer-to-Peer Cue System</h1>
+		<h1>MINI D&D</h1>
 
 		<div style="position: relative; top: 10px; margin-left: 40px; line-height: 20px;">
-			<input class="box" type="button" value="Host" onclick="window.location.href = './send.html'" />
+      
+      <input type="text" id="newID" placeholder="Enter new game ID..." autofocus="true" />
+			<input type="button" id="newGameWithID" value="Host" />
 
 			<br><br>
 
-			<input class="box" type="button" value="Player" onclick="window.location.href = './receive.html'" />
+      <input type="text" id="existingID" placeholder="ID of existing game" autofocus="true" />
+			<input type="button" id="connectToExisting" value="Player" />
+      
 
 			<br><br><br>
 
 		</div>
+
+    <script type="text/javascript">
+        var newIdInput = document.getElementById("newID");
+        var createNewButton = document.getElementById("newGameWithID");
+
+        createNewButton.addEventListener("click", function() {
+
+          window.location.href = './send.html?id=' + newIdInput.value;
+
+        });
+
+        var existingIdInput = document.getElementById("existingID");
+        var existingButton = document.getElementById("connectToExisting");
+
+        existingButton.addEventListener("click", function() {
+
+          window.location.href = './receive.html?id=' + existingIdInput.value;
+
+        });
+
+    </script>
 
 		
 

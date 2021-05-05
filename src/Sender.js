@@ -46,6 +46,8 @@ function main() {
         cueString: "<span class=\"cueMsg\">Cue: </span>",
         stagingArea: document.getElementById("stagedContent"),
 
+        soundCueImage : "https://danbleton.nyc3.digitaloceanspaces.com/public/sound_wave.png",
+
         //specific
         cueMap: {}
     };
@@ -224,8 +226,12 @@ function main() {
 
                 console.log(app.cueMap);
 
-                if (cue.type === "map") {
+                if (cue.type === CueType.MAP) {
                     event.srcElement.style.backgroundImage = 'url(' + cue.src + ')';
+                }
+
+                if(cue.type === CueType.SOUND) {
+                    event.srcElement.style.backgroundImage = 'url(' + app.soundCueImage + ')';
                 }
 
                 SaveWorkspace(JSON.stringify(app.cueMap));

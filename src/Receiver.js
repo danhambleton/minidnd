@@ -48,7 +48,7 @@ function main() {
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
         profileColor: new THREE.Color("#" + Math.floor(Math.random() * 16777215).toString(16)),
-        profileColorParams : {r : 0.0, g : 0.0, b : 0.0},
+        profileColorParams : {r : 255, g : 185, b : 0},
         profileModel: null,
         activeObj: null,
         playerTokenId: null,
