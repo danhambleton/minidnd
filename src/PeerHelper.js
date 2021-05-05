@@ -69,10 +69,10 @@ class PeerHelper {
 
     }
 
-    initAsHost(app, loadWorkspace) {
+    initAsHost(app, loadWorkspace, addMessage) {
 
         // Create own peer object with connection to shared PeerJS server
-        app.peer = new Peer(process.env.HOST_ID, {
+        app.peer = new Peer(app.requestID, {
             host: process.env.PEERJS_SERVER,
             path: '/',
             secure: true,
@@ -102,14 +102,14 @@ class PeerHelper {
                 if (app.conn.length < process.env.MAX_PEERS) {
                     app.conn.push(c);
                     c.send("Connected with host: " + app.peer.id);
-                    // addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
+                    addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
                     app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
 
 
                 }
                 else {
                     c.send("Host has reached max number of peers. Disconnecting...");
-                    // addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
+                    addMessage("<span class=\"peerMsg\">Host:</span> Connection from " + c.peer + " refused. Max peers reached.");
                     setTimeout(function () { c.close(); }, 500);
                 }
 
@@ -128,6 +128,8 @@ class PeerHelper {
             c.on('data', function (data) {
 
                 console.log(data);
+
+                addMessage("<span class=\"peerMsg\">Peer:</span> " + JSON.stringify(data) );
 
                 if(data.type === CueType.PLAYERMOVE)
                 {              

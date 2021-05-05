@@ -23,6 +23,8 @@ function main() {
 
     const app = {
 
+        requestID : "",
+
         //Threejs
         renderer: null,
         camera: null,
@@ -71,7 +73,7 @@ function main() {
         sendMessageBox: document.getElementById("sendMessageBox"),
         sendButton: document.getElementById("sendButton"),
         clearMsgsButton: document.getElementById("clearMsgsButton"),
-        recvIdInput: document.getElementById("host-id"),
+        // recvIdInput: document.getElementById("host-id"),
         connectButton: document.getElementById("connect-button"),
         playerContent: document.getElementById("playerContent")
 
@@ -91,6 +93,8 @@ function main() {
         else
             return results[1];
     };
+
+    app.requestID = getUrlParam("id");
 
     function LoadModel(id, params) {
 
@@ -146,6 +150,39 @@ function main() {
         actions.pickObjectInScene(app, hit);
 
     }
+
+    function join() {
+
+        // Close old connection
+        if (app.connection) {
+            app.connection.close();
+        }
+
+        // Create connection to destination peer specified in the input field
+        app.connection = app.peer.connect(app.requestID, {
+            reliable: true
+        });
+
+        app.connection.on('open', function () {
+            app.status.innerHTML = "Connected to: " + app.connection.peer;
+            console.log("Connected to: " + app.connection.peer);
+
+            // Check URL params for comamnds that should be sent immediately
+            var command = getUrlParam("command");
+            if (command)
+                app.connection.send(command);
+
+            ready();
+        });
+
+        // Handle incoming data (messages only since this is the signal sender)
+        app.connection.on('data', function (data) {
+            addMessage("<span class=\"peerMsg\">Peer:</span> " + data);
+        });
+        app.connection.on('close', function () {
+            app.status.innerHTML = "Connection closed";
+        });
+    };
 
     function initialize() {
 
@@ -618,39 +655,6 @@ function main() {
             app.connection = null;
         });
     }
-
-    function join() {
-
-        // Close old connection
-        if (app.connection) {
-            app.connection.close();
-        }
-
-        // Create connection to destination peer specified in the input field
-        app.connection = app.peer.connect(app.recvIdInput.value, {
-            reliable: true
-        });
-
-        app.connection.on('open', function () {
-            app.status.innerHTML = "Connected to: " + app.connection.peer;
-            console.log("Connected to: " + app.connection.peer);
-
-            // Check URL params for comamnds that should be sent immediately
-            var command = getUrlParam("command");
-            if (command)
-                app.connection.send(command);
-
-            ready();
-        });
-
-        // Handle incoming data (messages only since this is the signal sender)
-        app.connection.on('data', function (data) {
-            addMessage("<span class=\"peerMsg\">Peer:</span> " + data);
-        });
-        app.connection.on('close', function () {
-            app.status.innerHTML = "Connection closed";
-        });
-    };
 
     function addMessage(msg) {
         var now = new Date();

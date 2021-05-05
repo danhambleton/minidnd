@@ -72,7 +72,7 @@ class MapCue {
         this.src = "";
         this.id = "";
         this.showGrid = false;
-        this.gridScale = 0.04;
+        this.gridScale = 1.0;
         this.gridOpacity = 0.75;
         this.lineThickness = 0.18;
         this.color = {r : 1.0, g : 1.0, b : 1.0, a : 1.0};

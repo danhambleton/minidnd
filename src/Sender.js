@@ -16,6 +16,8 @@ function main() {
 
     const app = {
 
+        requestID : "",
+
         //peer
         lastPeerId: null,
         peer: null, // own peer objec,
@@ -47,6 +49,28 @@ function main() {
         //specific
         cueMap: {}
     };
+
+        /**
+     * Get first "GET style" parameter from href.
+     * This enables delivering an initial command upon page load.
+     *
+     * Would have been easier to use location.hash.
+     */
+    function getUrlParam(name) {
+        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+        var regexS = "[\\?&]" + name + "=([^&#]*)";
+        var regex = new RegExp(regexS);
+        var results = regex.exec(window.location.href);
+        if (results == null)
+            return null;
+        else
+            return results[1];
+    };
+
+    app.requestID = getUrlParam("id");
+
+    console.log(app.requestID);
+
 
     function getContentType(filepath) {
         var ext = filepath.split('.').pop().toLowerCase();
@@ -341,7 +365,8 @@ function main() {
         var peerHelper = new PeerHelper();
         peerHelper.initAsHost(app, function(){
             LoadWorkspace(LoadContentGrid);
-        });
+        },
+        addMessage);
     };
 
 
@@ -453,30 +478,6 @@ function main() {
         sendCue({
             type : CueType.AUDIOKILL
         })
-
-        // //deselect all content
-        // for(const id in stagedContent)
-        // {
-
-
-        //     var b = document.getElementById(id);
-        //     if(b)
-        //     {
-        //         if(stagedContent[id].ui_state === "ready" || stagedContent[id].ui_state === "selected")
-        //         {
-        //             b.className = "cueElementReady";
-        //         }
-
-        //         else
-        //         {
-        //             b.className = "cueElementEmpty";
-        //         }
-
-        //         stagedContent[id].ui_state = "ready";
-
-        //     }
-        // }
-
     });
 
     app.masterVolumeSlider.addEventListener("change", function () {
