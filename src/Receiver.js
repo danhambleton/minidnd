@@ -75,7 +75,9 @@ function main() {
         clearMsgsButton: document.getElementById("clearMsgsButton"),
         // recvIdInput: document.getElementById("host-id"),
         connectButton: document.getElementById("connect-button"),
-        playerContent: document.getElementById("playerContent")
+        playerContent: document.getElementById("playerContent"),
+
+        soundCueImage : "https://danbleton.nyc3.digitaloceanspaces.com/public/sound_wave.png",
 
     };
 
@@ -632,21 +634,26 @@ function main() {
                     console.log("updating map...");
                     console.log(cue);
 
-                    //TODO: update map
-                    //actions.updateSound(app, cue);
-                    app.gridScale = cue.gridScale;
-                    app.gridOpacity = cue.gridOpacity;
-                    app.shaderUniforms.u_grid_spacing.value = cue.lineThickness;
-                    app.shaderUniforms.u_grid_scale.value = app.gridScale
-                    app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
+                    actions.buildMapScene(app, cue, function (){
+                        app.gridScale = app.cueMap[id].gridScale;
+                        app.cueMap[id].state = CueState.PLAYING;
+                    });
 
-                    app.gridObj.material.needsUpdate = true;
+                    // //TODO: update map
+                    // //actions.updateSound(app, cue);
+                    // app.gridScale = cue.gridScale;
+                    // app.gridOpacity = cue.gridOpacity;
+                    // app.shaderUniforms.u_grid_spacing.value = cue.lineThickness;
+                    // app.shaderUniforms.u_grid_scale.value = app.gridScale
+                    // app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
 
-                    if (app.cueMap[id].state !== CueState.PLAYING) {
-                        actions.buildMapScene(app, cue, function (){
-                            app.cueMap[id].state = CueState.PLAYING;
-                        });
-                    }
+                    // app.gridObj.material.needsUpdate = true;
+
+                    // if (app.cueMap[id].state !== CueState.PLAYING) {
+                    //     actions.buildMapScene(app, cue, function (){
+                    //         app.cueMap[id].state = CueState.PLAYING;
+                    //     });
+                    // }
                 }
             }
         });
