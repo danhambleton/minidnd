@@ -231,6 +231,11 @@ class UIHelpers {
             max: 5.0,
             step: 0.01
         });
+        gui.addInput(cue, "hexFadeDistance", {
+            min: 0.0,
+            max: 200.0,
+            step: 1.0
+        });
         gui.addInput(cue, "color");
 
         const btn = gui.addButton({

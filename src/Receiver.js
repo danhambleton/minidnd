@@ -45,6 +45,7 @@ function main() {
         gridObj: null,
         gridScale: 1.0,
         gridOpacity: 0.75,
+        hexFadeDist: 100.0,
         imageSize: new THREE.Vector2(1920, 1080),
         clientSize: null,
         profileColor: new THREE.Color("#" + Math.floor(Math.random() * 16777215).toString(16)),
@@ -636,6 +637,7 @@ function main() {
 
                     actions.buildMapScene(app, cue, function (){
                         app.gridScale = app.cueMap[id].gridScale;
+                        app.hexFadeDist = app.cueMap[id].hexFadeDistance;
                         app.cueMap[id].state = CueState.PLAYING;
                     });
 

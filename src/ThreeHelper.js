@@ -112,6 +112,8 @@ class ThreeHelper {
              u_grid_alpha: { value: app.gridOpacity },
              u_grid_spacing: { value: app.debugParams.p_grid_spacing },
              u_image_dims: { value: app.imageSize },
+             u_hex_fade_distance: {type: "f", value: app.hexFadeDist},
+             u_token_position: {value: new THREE.Vector3(0.0,0.0,0.0)},
              fogColor:    { type: "c", value: app.scene.fog.color },
              fogNear:     { type: "f", value: app.scene.fog.near },
              fogFar:      { type: "f", value: app.scene.fog.far }

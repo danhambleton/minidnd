@@ -77,7 +77,7 @@ class MapCue {
         this.lineThickness = 0.18;
         this.color = {r : 1.0, g : 1.0, b : 1.0, a : 1.0};
         this.texture = null;
-
+        this.hexFadeDistance = 100.0;
         this.state = null;
 
     }

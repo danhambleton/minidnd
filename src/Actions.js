@@ -415,6 +415,16 @@ class Actions {
 
         tokenObj.position.set(newPos.x, 0.0, newPos.y);
 
+        //update token position in shader
+        if(app.gridObj)
+        {
+            app.shaderUniforms.u_token_position.value = tokenObj.position;
+            app.shaderUniforms.u_hex_fade_distance.value = app.hexFadeDist;
+
+            app.gridObj.material.uniforms = app.shaderUniforms;
+            app.gridObj.material.needsUpdate = true;
+        }
+
         var peerHelper = new PeerHelper();
         peerHelper.sendObjectTransfromToHost(app, tokenObj);
     }
@@ -498,9 +508,12 @@ class Actions {
 
                 app.gridScale = params.gridScale;
                 app.gridOpacity = params.gridOpacity;
+                app.hexFadeDist = params.hexFadeDistance;
                 app.shaderUniforms.u_grid_spacing.value = params.lineThickness;
                 app.shaderUniforms.u_grid_scale.value = app.gridScale
                 app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
+                app.shaderUniforms.u_hex_fade_distance.value = app.hexFadeDist;
+                app.shaderUniforms.u_token_position.value = new THREE.Vector3(0.0,0.0,0.0);
 
                 app.gridObj = new THREE.Mesh(
                     new THREE.PlaneGeometry(app.mapWidth, aspect * app.mapWidth),

@@ -1,10 +1,14 @@
 varying vec2 vUv;
 varying vec4 worldCoord;
 
+uniform vec3 u_token_position;
+uniform float u_hex_fade_distance;
 uniform float u_grid_scale;
 uniform float u_grid_alpha;
 uniform float u_grid_spacing;
 uniform vec2 u_image_dims;
+
+
 
 uniform vec3 fogColor;
 uniform float fogNear;
@@ -86,7 +90,7 @@ void main() {
     vec4 col = mix(col_inside, col_outside, step(0.0, sd));
     float dist_change = fwidth(sd) * 0.5;
 
-    float distToCamera = length(vec2(cameraPosition.x, cameraPosition.z - 0.5) - center_coord.xy);
+    
 
     // Major contour lines
     {
@@ -101,7 +105,8 @@ void main() {
   // Initiate the background to a white color, putting in some dark borders.
     vec4 hexCol = col;//mix(vec4(1., 1., 1., u_grid_alpha), vec4(1., 1., 1., 0.), step(0.0, u_grid_spacing, sd)); 
 
-    // hexCol = mix(hexCol, vec4(0.0, 0.0, 0.0, 1.0), (distToCamera / 30.0) - 0.25);
+  float distToTokenPos = length(vec2(u_token_position.x, u_token_position.z) - center_coord.xy);
+  hexCol = mix(hexCol, vec4(0.0, 0.0, 0.0, 1.0), distToTokenPos / u_hex_fade_distance);
 
   #ifdef USE_FOG
       #ifdef USE_LOGDEPTHBUF_EXT
