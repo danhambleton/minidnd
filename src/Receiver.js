@@ -289,7 +289,8 @@ function main() {
             if(app.activeObj) {
 
                 var newPos = hexGrid.HexCenterFromPoint(app.activeObj.position, app.gridScale);
-                app.activeObj.position.set(newPos);
+                app.activeObj.position.x = newPos.x;
+                app.activeObj.position.z = newPos.y;
             }
 
             render();
@@ -303,7 +304,8 @@ function main() {
             if(app.activeObj) {
 
                 var newPos = hexGrid.HexCenterFromPoint(app.activeObj.position, app.gridScale);
-                app.activeObj.position.set(newPos);
+                app.activeObj.position.x = newPos.x;
+                app.activeObj.position.z = newPos.y;
             }
 
             if(app.activeObj) {
