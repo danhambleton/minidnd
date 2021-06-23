@@ -173,6 +173,7 @@ class UIHelpers {
 
         gui.addInput(cue, "type");
         gui.addInput(cue, "src");
+        gui.addInput(cue, "instanceCount");
         gui.addInput(cue, "scale", {
             min: 0.001,
             max: 10.0,

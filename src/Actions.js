@@ -196,24 +196,57 @@ class Actions {
         var model = params.model;
 
         if (model) {
-            var obj = model.clone();
-            // obj.scale.set(params.scale, params.scale, params.scale);
-            this.scaleModelHexGrid(obj, params.scale, app.gridScale);
-            obj.position.set(params.position.x, params.position.y, params.position.z);
-            obj.visible = params.visible;
-            obj.userData.cueID = params.id;
-            obj.name = params.id;
 
-            obj.traverse(function (object) {
-                if (object.isMesh) {
+            var numInstances = 1;
+            if(params.instanceCount)
+            {
+                numInstances = params.instanceCount;
+            }
 
-                    object.userData.root = obj.id;
+            for(var i = 0; i < numInstances; i++)
+            {
+                var obj = model.clone();
+                // obj.scale.set(params.scale, params.scale, params.scale);
+                this.scaleModelHexGrid(obj, params.scale, app.gridScale);
+                obj.position.set(params.position.x, params.position.y, params.position.z);
+
+                //snap to hex grid
+                var hexGrid = new HexGrid();
+                var sp = new THREE.Vector3(obj.position.x, obj.position.z, 0.0);
+                var hexCenterInCubeCoords = hexGrid.HexRound(hexGrid.CoordToHex(sp, app.gridScale));
+
+                var move = new THREE.Vector3(0.0, 0.0, 0.0);
+
+                if(i > 0)
+                {
+                    move = hexGrid.NeighbourOffset(i, 1 + Math.floor(i / 6.0));
                 }
-            });
+        
+                //move is a vec3 that increments the cube coords
+                var newHexCenter = hexGrid.HexRound(hexCenterInCubeCoords);
+                newHexCenter.x  = newHexCenter.x + move.x;
+                newHexCenter.y  = newHexCenter.y + move.y;
+                newHexCenter.z  = newHexCenter.z + move.z;
+                var newPos = hexGrid.HexToCoord(newHexCenter, app.gridScale);
+        
+                obj.position.set(newPos.x, 0.0, newPos.y);
+                
+                obj.visible = params.visible;
+                obj.userData.cueID = params.id;
+                obj.name = params.id + "-" + i;
+    
+                obj.traverse(function (object) {
+                    if (object.isMesh) {
+    
+                        object.userData.root = obj.id;
+                    }
+                });
+    
+                app.scene.add(obj);
+                app.transients.push(obj);
+                //other params
+            }
 
-            app.scene.add(obj);
-            app.transients.push(obj);
-            //other params
         }
         else {
             console.log("could not find model in cache: " + params.src);

@@ -48,6 +48,33 @@ class HexGrid {
         return new THREE.Vector3(rx, ry, rz)
     }
 
+    NeighbourOffset(i, r)
+    {
+        if (i%6===0) {
+            return new THREE.Vector3(r * -1.0, r * 1.0, 0.0);
+        }
+        if (i%6===1) {
+            //move hex -z
+            return new THREE.Vector3(0.0, r *1.0, r *-1.0);
+        }
+        if (i%6===2) {
+            //move hex +x
+            return new THREE.Vector3(r *1.0, 0.0, r *-1.0);
+        }
+        if (i%6===3) {
+            //move hex -x
+            return new THREE.Vector3(r *-1.0, 0.0, r *1.0);
+        }
+        if (i%6===4) {
+            //move hex +z
+            return new THREE.Vector3(0.0, r *-1.0, r *1.0);
+        }
+        if (i%6===5) {
+            //move hex -y
+            return new THREE.Vector3(r *1.0, r *-1.0, 0.0);
+        }
+    }
+
     HexCenterFromPoint(p, scale)
     {
         return this.HexToCoord(this.HexRound(this.CoordToHex(p, scale)), scale);

@@ -103,7 +103,7 @@ class PeerHelper {
                     app.conn.push(c);
                     c.send("Connected with host: " + app.peer.id);
                     addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
-                    app.status.innerHTML = `Available connections: (${app.conn.length}/${process.env.MAX_PEERS})`;
+                    app.status.innerHTML = `Available connections: (${process.env.MAX_PEERS - app.conn.length}/${process.env.MAX_PEERS})`;
 
 
                 }

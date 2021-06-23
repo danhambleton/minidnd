@@ -282,10 +282,29 @@ function main() {
 
         app.transformControl = new TransformControls(app.camera, app.renderer.domElement);
         app.transformControl.setSize(1.0);
-        app.transformControl.addEventListener('change', render);
+        app.transformControl.addEventListener('change', function(event){
+
+            //snap object to hex
+            var hexGrid = new HexGrid();
+            if(app.activeObj) {
+
+                var newPos = hexGrid.HexCenterFromPoint(app.activeObj.position, app.gridScale);
+                app.activeObj.position.set(newPos);
+            }
+
+            render();
+        });
         app.transformControl.addEventListener('dragging-changed', function (event) {
 
             app.controls.enabled = !event.value;
+
+            //snap object to hex
+            var hexGrid = new HexGrid();
+            if(app.activeObj) {
+
+                var newPos = hexGrid.HexCenterFromPoint(app.activeObj.position, app.gridScale);
+                app.activeObj.position.set(newPos);
+            }
 
             if(app.activeObj) {
                 var peerHelper = new PeerHelper();
