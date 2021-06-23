@@ -288,7 +288,8 @@ function main() {
             var hexGrid = new HexGrid();
             if(app.activeObj) {
 
-                var newPos = hexGrid.HexCenterFromPoint(app.activeObj.position, app.gridScale);
+                var sp = new THREE.Vector3(app.activeObj.position.x, app.activeObj.position.z, 0.0);
+                var newPos = hexGrid.HexCenterFromPoint(sp, app.gridScale);
                 app.activeObj.position.x = newPos.x;
                 app.activeObj.position.z = newPos.y;
             }
@@ -302,8 +303,8 @@ function main() {
             //snap object to hex
             var hexGrid = new HexGrid();
             if(app.activeObj) {
-
-                var newPos = hexGrid.HexCenterFromPoint(app.activeObj.position, app.gridScale);
+                var sp = new THREE.Vector3(app.activeObj.position.x, app.activeObj.position.z, 0.0);
+                var newPos = hexGrid.HexCenterFromPoint(sp, app.gridScale);
                 app.activeObj.position.x = newPos.x;
                 app.activeObj.position.z = newPos.y;
             }
