@@ -105,7 +105,11 @@ class PeerHelper {
                     addMessage("<span class=\"peerMsg\">Host:</span> Connected to: " + c.peer);
                     app.status.innerHTML = `Available connections: (${process.env.MAX_PEERS - app.conn.length}/${process.env.MAX_PEERS})`;
 
-
+                    c.send(
+                        {
+                            type : CueType.PLAYERCONNECT
+                        }
+                    )
                 }
                 else {
                     c.send("Host has reached max number of peers. Disconnecting...");

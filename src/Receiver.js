@@ -609,8 +609,10 @@ function main() {
 
                 else if (cue.state === CueState.ACTIVE || cue.state === CueState.PLAYING) {
                     // contentMap[id].media.stop();
-                    console.log("updating map...");
+                    console.log("updating model...");
                     console.log(cue);
+
+                    //first clear the current set of instances
 
                     //TODO: update model
                     //actions.updateSound(app, cue);

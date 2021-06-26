@@ -44,7 +44,9 @@ class Actions {
                 // var scaleFactor = (10.0 * parseFloat(params.volume) / app.gridScale) / (baseDim);
                 // gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-                var matCapMaterial = null;
+                var matCapMaterial = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color(0.44, 0.44, 0.44)
+                });
                 
 
                 gltf.scene.name = params.name;
@@ -52,15 +54,15 @@ class Actions {
                 gltf.scene.traverse(function (object) {
                     if (object.isMesh) {
 
-                        if (object.material.name === "matcap") {
-                            if (!matCapMaterial) {
-                                matCapMaterial = new THREE.MeshMatcapMaterial({
-                                    matcap: object.material.map,
-                                    color: 0xa3a3a3
-                                });
-                            }
+                        // if (object.material.name === "matcap") {
+                        //     if (!matCapMaterial) {
+                        //         matCapMaterial = new THREE.MeshMatcapMaterial({
+                        //             matcap: object.material.map,
+                        //             color: 0xa3a3a3
+                        //         });
+                        //     }
 
-                        }
+                        // }
 
                         if (matCapMaterial) {
                             object.material = matCapMaterial;
@@ -203,6 +205,9 @@ class Actions {
                 numInstances = params.instanceCount;
             }
 
+            var hexGrid = new HexGrid();
+            var offsets = hexGrid.NeighbourOffsets();
+            numInstances = Math.min(18, numInstances);
             for(var i = 0; i < numInstances; i++)
             {
                 var obj = model.clone();
@@ -211,7 +216,7 @@ class Actions {
                 obj.position.set(params.position.x, params.position.y, params.position.z);
 
                 //snap to hex grid
-                var hexGrid = new HexGrid();
+                
                 var sp = new THREE.Vector3(obj.position.x, obj.position.z, 0.0);
                 var hexCenterInCubeCoords = hexGrid.HexRound(hexGrid.CoordToHex(sp, app.gridScale));
 
@@ -219,8 +224,10 @@ class Actions {
 
                 if(i > 0)
                 {
-                    move = hexGrid.NeighbourOffset(i, 1 + Math.floor(i / 6.0));
+                    move = offsets[i-1];
                 }
+
+                console.log(move);
         
                 //move is a vec3 that increments the cube coords
                 var newHexCenter = hexGrid.HexRound(hexCenterInCubeCoords);
@@ -234,6 +241,9 @@ class Actions {
                 obj.visible = params.visible;
                 obj.userData.cueID = params.id;
                 obj.name = params.id + "-" + i;
+
+                var col = new THREE.Color(`rgb(${parseInt(params.color.r)}, ${parseInt(params.color.g)}, ${parseInt(params.color.b)})`);
+                this.setMaterialColor(app, obj, { color: col });
     
                 obj.traverse(function (object) {
                     if (object.isMesh) {
@@ -484,6 +494,14 @@ class Actions {
         try {
 
             for (const obj of app.transients) {
+
+                
+                if(app.cueMap[obj.userData.cueID])
+                {
+                    app.cueMap[obj.userData.cueID] = null;
+                }
+
+
                 app.scene.remove(obj);
             }
 

@@ -40,6 +40,7 @@ function main() {
         clearMsgsButton: document.getElementById("clearMsgsButton"),
         playContentButton: document.getElementById("playContent"),
         saveContentButton: document.getElementById("saveWorkspace"),
+        clearSelectionButton: document.getElementById("deselectAll"),
         stopContentButton: document.getElementById("stopContent"),
         masterVolumeSlider: document.getElementById("master-volume"),
         masterVolumeLabel: document.getElementById("volume-label"),
@@ -254,6 +255,19 @@ function main() {
         }
     }
 
+    function DeselectAll() {
+        var stagingArea = document.getElementById("contentGrid");
+        for (var i = 0; i < process.env.MAX_SLOTS; i++) {
+            var id = "cb_" + i.toString().padStart(2, '0');
+            var b = document.getElementById(id);
+            if(b)
+            {
+                b.className = "cueElementReady";
+                app.cueMap[id].state = CueState.READY;
+            }
+        }
+    }
+
     function BuildContentGrid() {
         var stagingArea = document.getElementById("contentGrid");
         for (var i = 0; i < process.env.MAX_SLOTS; i++) {
@@ -277,15 +291,15 @@ function main() {
                     var uiHelper = new UIHelpers();
                     if (app.cueMap[this.id].type === "sound") {
                         console.log("building inspector");
-                        uiHelper.buildSoundInspector(app, id)
+                        uiHelper.buildSoundInspector(app, id, SaveWorkspace)
                     }
                     if (app.cueMap[this.id].type === "model") {
                         console.log("building inspector");
-                        uiHelper.buildModelInspector(app, id)
+                        uiHelper.buildModelInspector(app, id, SaveWorkspace)
                     }
                     if (app.cueMap[this.id].type === "map") {
                         console.log("building inspector");
-                        uiHelper.buildMapInspector(app, id)
+                        uiHelper.buildMapInspector(app, id, SaveWorkspace)
                     }
 
                     if (app.cueMap[this.id].state === CueState.READY) {
@@ -473,9 +487,17 @@ function main() {
 
     });
 
+    app.clearSelectionButton.addEventListener('click', function () {
+
+        DeselectAll();
+
+    });
+
     app.playContentButton.addEventListener('click', function () {
 
         sendAllCues();
+
+        // DeselectAll();
 
     });
 
@@ -484,6 +506,8 @@ function main() {
         sendCue({
             type : CueType.AUDIOKILL
         })
+
+        DeselectAll();
     });
 
     app.masterVolumeSlider.addEventListener("change", function () {

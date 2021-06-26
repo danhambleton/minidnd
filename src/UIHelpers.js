@@ -82,7 +82,7 @@ class UIHelpers {
     }
 
 
-    buildSoundInspector(app, id) {
+    buildSoundInspector(app, id, save) {
 
         const cue = app.cueMap[id];
 
@@ -152,11 +152,15 @@ class UIHelpers {
             }
         });
 
+        gui.on("change", () => {
+            save(JSON.stringify(app.cueMap));
+        })
+
 
 
     }
 
-    buildModelInspector(app, id) {
+    buildModelInspector(app, id, save) {
 
         const cue = app.cueMap[id];
 
@@ -206,10 +210,15 @@ class UIHelpers {
             }
         });
 
+        gui.on("change", () => {
+            save(JSON.stringify(app.cueMap));
+        })
+
+
 
     }
 
-    buildMapInspector(app, id) {
+    buildMapInspector(app, id, save) {
 
         const cue = app.cueMap[id];
 
@@ -259,6 +268,11 @@ class UIHelpers {
             }
             }
         });
+
+        gui.on("change", () => {
+            save(JSON.stringify(app.cueMap));
+        })
+
 
     }
 }
