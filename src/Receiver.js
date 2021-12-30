@@ -331,7 +331,7 @@ function main() {
             }  
         });
 
-        app.playerContent.addEventListener('touchstart', function(event){
+        app.playerContent.addEventListener("touchstart", function(event){
 
             console.log("in touch event");
 
