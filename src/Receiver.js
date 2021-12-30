@@ -331,16 +331,12 @@ function main() {
             }  
         });
 
-        app.playerContent.addEventListener("touchstart", function(event){
+        app.playerContent.addEventListener("pointerdown", function(event){
 
             console.log("in touch event");
 
-            var touch = event.touches[0];
-            var y = touch.pageY;
-            var x = touch.pageX;
-
-            app.mousePosition.x = ((x- app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
-            app.mousePosition.y = - ((y - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
+            app.mousePosition.x = ((event.clientX - app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
+            app.mousePosition.y = - ((event.clientY - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
 
             actions.pickHexGridPoint(app, function (hp) {
 
