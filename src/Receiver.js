@@ -331,6 +331,36 @@ function main() {
             }  
         });
 
+        app.playerContent.addEventListener('touchstart', function(event){
+
+            console.log("in touch event");
+
+            var touch = event.touches[0];
+            var y = touch.pageY;
+            var x = touch.pageX;
+
+            app.mousePosition.x = ((x- app.renderer.domElement.offsetLeft) / app.renderer.domElement.clientWidth) * 2 - 1;
+            app.mousePosition.y = - ((y - app.renderer.domElement.offsetTop) / app.renderer.domElement.clientHeight) * 2 + 1;
+
+            actions.pickHexGridPoint(app, function (hp) {
+
+                console.log("hex point: " + hp.x + ", " + hp.y + ", " + hp.z);
+                actions.addPlayerTokenToScene(app, {}, function (id) {
+                    console.log("id: " + id);
+                    var obj = app.scene.getObjectById(id, true);
+                    console.log("obj: " + obj.id);
+                    obj.position.set(hp.x, 0.0, hp.y);
+
+                });
+
+            });
+
+
+            render();
+
+
+        });
+
         //add handler
         app.playerContent.addEventListener("dblclick", function (event) {
 

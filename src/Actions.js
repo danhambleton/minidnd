@@ -47,7 +47,7 @@ class Actions {
                 var matCapMaterial = new THREE.MeshLambertMaterial({
                     color: new THREE.Color(0.44, 0.44, 0.44)
                 });
-                
+
 
                 gltf.scene.name = params.name;
 
@@ -182,7 +182,7 @@ class Actions {
 
 
         let id = cue.id;
-        
+
         app.cueMap[id].media.volume = cue.volume;
         app.cueMap[id].media.attack = cue.fade_in;
         app.cueMap[id].media.release = cue.fade_out;
@@ -200,58 +200,55 @@ class Actions {
         if (model) {
 
             var numInstances = 1;
-            if(params.instanceCount)
-            {
+            if (params.instanceCount) {
                 numInstances = params.instanceCount;
             }
 
             var hexGrid = new HexGrid();
             var offsets = hexGrid.NeighbourOffsets();
             numInstances = Math.min(18, numInstances);
-            for(var i = 0; i < numInstances; i++)
-            {
+            for (var i = 0; i < numInstances; i++) {
                 var obj = model.clone();
                 // obj.scale.set(params.scale, params.scale, params.scale);
                 this.scaleModelHexGrid(obj, params.scale, app.gridScale);
                 obj.position.set(params.position.x, params.position.y, params.position.z);
 
                 //snap to hex grid
-                
+
                 var sp = new THREE.Vector3(obj.position.x, obj.position.z, 0.0);
                 var hexCenterInCubeCoords = hexGrid.HexRound(hexGrid.CoordToHex(sp, app.gridScale));
 
                 var move = new THREE.Vector3(0.0, 0.0, 0.0);
 
-                if(i > 0)
-                {
-                    move = offsets[i-1];
+                if (i > 0) {
+                    move = offsets[i - 1];
                 }
 
                 console.log(move);
-        
+
                 //move is a vec3 that increments the cube coords
                 var newHexCenter = hexGrid.HexRound(hexCenterInCubeCoords);
-                newHexCenter.x  = newHexCenter.x + move.x;
-                newHexCenter.y  = newHexCenter.y + move.y;
-                newHexCenter.z  = newHexCenter.z + move.z;
+                newHexCenter.x = newHexCenter.x + move.x;
+                newHexCenter.y = newHexCenter.y + move.y;
+                newHexCenter.z = newHexCenter.z + move.z;
                 var newPos = hexGrid.HexToCoord(newHexCenter, app.gridScale);
-        
+
                 obj.position.set(newPos.x, 0.0, newPos.y);
-                
+
                 obj.visible = params.visible;
                 obj.userData.cueID = params.id;
                 obj.name = params.id + "-" + i;
 
                 var col = new THREE.Color(`rgb(${parseInt(params.color.r)}, ${parseInt(params.color.g)}, ${parseInt(params.color.b)})`);
                 this.setMaterialColor(app, obj, { color: col });
-    
+
                 obj.traverse(function (object) {
                     if (object.isMesh) {
-    
+
                         object.userData.root = obj.id;
                     }
                 });
-    
+
                 app.scene.add(obj);
                 app.transients.push(obj);
                 //other params
@@ -265,60 +262,61 @@ class Actions {
 
     addPlayerTokenToScene(app, params, callback) {
 
-        if(!app.profileModel) {
+        if (!app.profileModel) {
             console.log("profile model not set!");
             return;
         }
 
-        if(app.playerTokenId && app.scene.getObjectByName(app.playerTokenId))
-        {
-            console.log("Token already added to scene!");
-            return;
+        if (app.playerTokenId && app.scene.getObjectByName(app.playerTokenId)) {
+            console.log("Token already added to scene! Moving token.");
+            var tokenObj = app.scene.getObjectByName(app.playerTokenId);
+            callback(tokenObj.id);
+        } else {
+
+            var tokenObj = app.profileModel.clone();
+            tokenObj.position.set(0.0, 0.0, 0.0);
+            var bbox = new THREE.Box3().setFromObject(tokenObj);
+
+            var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
+            var scaleFactor = 1.75 * app.gridScale / baseDim;
+            tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+
+            // var matCapMaterial = new THREE.MeshMatcapMaterial({
+            //     matcap: app.matcaps.playerTokenMatcap,
+            //     color: app.profileColor
+            // });
+
+            var matCapMaterial = new THREE.MeshLambertMaterial({
+                color: app.profileColor,
+            });
+
+
+            console.log("token cloned:=");
+            tokenObj.name = nanoid(10);
+
+            app.playerTokenId = tokenObj.name;
+            tokenObj.position.set(0.0, 0.0, 0.0);
+
+            console.log("changing material colors");
+            tokenObj.traverse(function (object) {
+                if (object.isMesh) {
+
+                    object.material = matCapMaterial;
+                    object.material.needsUpdate = true;
+                    object.userData.root = tokenObj.id;
+                    object.castShadow = true;
+                    object.receiveShadow = true;
+                }
+            });
+
+            app.transients.push(tokenObj);
+            // tokenObj.userData.isTransient = true;
+            console.log("token adding to scene");
+            app.scene.add(tokenObj);
+
+            callback(tokenObj.id);
         }
-
-        var tokenObj = app.profileModel.clone();
-        tokenObj.position.set(0.0, 0.0, 0.0);
-        var bbox = new THREE.Box3().setFromObject(tokenObj);
-
-        var baseDim = Math.max(Math.abs(bbox.max.x - bbox.min.x), Math.abs(bbox.max.z - bbox.min.z));
-        var scaleFactor = 1.75 * app.gridScale / baseDim;
-        tokenObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-
-        // var matCapMaterial = new THREE.MeshMatcapMaterial({
-        //     matcap: app.matcaps.playerTokenMatcap,
-        //     color: app.profileColor
-        // });
-
-        var matCapMaterial = new THREE.MeshLambertMaterial({
-            color: app.profileColor,
-        });
-
-
-        console.log("token cloned:=");
-        tokenObj.name = nanoid(10);
-
-        app.playerTokenId = tokenObj.name;
-        tokenObj.position.set(0.0, 0.0, 0.0);
-
-        console.log("changing material colors");
-        tokenObj.traverse(function (object) {
-            if (object.isMesh) {
-
-                object.material = matCapMaterial;
-                object.material.needsUpdate = true;
-                object.userData.root = tokenObj.id;
-                object.castShadow = true; 
-                object.receiveShadow = true;          
-            }
-        });
-
-        app.transients.push(tokenObj);
-        // tokenObj.userData.isTransient = true;
-        console.log("token adding to scene");
-        app.scene.add(tokenObj);
-
-        callback(tokenObj.id);
     }
 
     updateModelTransform(app, params) {
@@ -333,7 +331,7 @@ class Actions {
         }
     }
 
-    pickObjectInScene(app, hit){
+    pickObjectInScene(app, hit) {
 
         var raycaster = new THREE.Raycaster();
 
@@ -371,14 +369,14 @@ class Actions {
                             console.log("active obj: " + rootObj.name);
 
                             hit = intersects[i];
-                            
+
                             // return true;
                         }
                     }
                 }
             }
         }
-        else{
+        else {
             app.scene.remove(app.transformControl);
         }
 
@@ -391,7 +389,7 @@ class Actions {
 
         // update the picking ray with the camera and screenPoint position
         raycaster.setFromCamera(app.mousePosition, app.camera);
-        
+
         // calculate objects intersecting the picking ray
         const intersects = raycaster.intersectObjects(app.scene.children);
 
@@ -414,8 +412,7 @@ class Actions {
         }
     }
 
-    setMaterialColor(app, obj, params)
-    {
+    setMaterialColor(app, obj, params) {
         obj.traverse(function (object) {
             if (object.isMesh) {
 
@@ -438,8 +435,7 @@ class Actions {
 
     movePlayerToNextHex(app, move) {
 
-        if(!app.scene.getObjectByName(app.playerTokenId))
-        {
+        if (!app.scene.getObjectByName(app.playerTokenId)) {
             console.log("Token not added to scene!");
             return;
         }
@@ -451,16 +447,15 @@ class Actions {
 
         //move is a vec3 that increments the cube coords
         var newHexCenter = hexGrid.HexRound(hexCenterInCubeCoords);
-        newHexCenter.x  = newHexCenter.x + move.x;
-        newHexCenter.y  = newHexCenter.y + move.y;
-        newHexCenter.z  = newHexCenter.z + move.z;
+        newHexCenter.x = newHexCenter.x + move.x;
+        newHexCenter.y = newHexCenter.y + move.y;
+        newHexCenter.z = newHexCenter.z + move.z;
         var newPos = hexGrid.HexToCoord(newHexCenter, app.gridScale);
 
         tokenObj.position.set(newPos.x, 0.0, newPos.y);
 
         //update token position in shader
-        if(app.gridObj)
-        {
+        if (app.gridObj) {
             app.shaderUniforms.u_token_position.value = tokenObj.position;
             app.shaderUniforms.u_hex_fade_distance.value = app.hexFadeDist;
 
@@ -472,11 +467,10 @@ class Actions {
         peerHelper.sendObjectTransfromToHost(app, tokenObj);
     }
 
-    scaleModelHexGrid(obj, numHexes, gridScale)
-    {
+    scaleModelHexGrid(obj, numHexes, gridScale) {
         var bbox = new THREE.Box3().setFromObject(obj);
         console.log("current scale: " + obj.scale.x);
-        
+
         var dim = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
         console.log("base dim: " + dim);
         var scaleFactor = obj.scale.x * (2.0 * numHexes * gridScale) / dim;
@@ -495,9 +489,8 @@ class Actions {
 
             for (const obj of app.transients) {
 
-                
-                if(app.cueMap[obj.userData.cueID])
-                {
+
+                if (app.cueMap[obj.userData.cueID]) {
                     app.cueMap[obj.userData.cueID] = null;
                 }
 
@@ -564,7 +557,7 @@ class Actions {
                 app.shaderUniforms.u_grid_scale.value = app.gridScale
                 app.shaderUniforms.u_grid_alpha.value = app.gridOpacity
                 app.shaderUniforms.u_hex_fade_distance.value = app.hexFadeDist;
-                app.shaderUniforms.u_token_position.value = new THREE.Vector3(0.0,0.0,0.0);
+                app.shaderUniforms.u_token_position.value = new THREE.Vector3(0.0, 0.0, 0.0);
 
                 app.gridObj = new THREE.Mesh(
                     new THREE.PlaneGeometry(app.mapWidth, aspect * app.mapWidth),
